@@ -1,24 +1,34 @@
 'use client';
 
-import { useAuth } from './(main)/auth-provider';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import DashboardPage from './(main)/dashboard/page';
-import LoginPage from './login/page';
+import { KanbanBoard } from '@/components/job-tracker/kanban-board';
+import { useJobStore } from '@/hooks/use-job-store';
+import { AddJobDialog } from '@/components/job-tracker/add-job-dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function Home() {
-  const { isAuthenticated } = useAuth();
-  const router = useRouter();
+export default function JobTrackerPage() {
+  const { jobs, addJob, updateJobStatus, deleteJob, isLoaded } = useJobStore();
 
-  useEffect(() => {
-    if (isAuthenticated === undefined) return; // Wait for auth status
-    if (isAuthenticated) {
-      router.replace('/dashboard');
-    } else {
-      router.replace('/login');
-    }
-  }, [isAuthenticated, router]);
-
-  // Render a loading state or nothing while redirecting
-  return null;
+  return (
+    <div className="flex h-full flex-col">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Job Application Tracker</h1>
+          <p className="text-muted-foreground">
+            Manage your job applications with ease. Drag and drop cards to update status.
+          </p>
+        </div>
+        <AddJobDialog onAddJob={addJob} />
+      </div>
+      {isLoaded ? (
+        <KanbanBoard jobs={jobs} updateJobStatus={updateJobStatus} deleteJob={deleteJob} />
+      ) : (
+        <div className="grid flex-1 grid-cols-1 gap-6 md:grid-cols-3">
+          <Skeleton className="h-[500px] w-full" />
+          <Skeleton className="h-[500px] w-full" />
+          <Skeleton className="h-[500px] w-full" />
+        </div>
+      )}
+    </div>
+  );
 }
+
