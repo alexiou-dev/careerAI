@@ -29,10 +29,10 @@ const formSchema = z.object({
 type LoginFormValues = z.infer<typeof formSchema>;
 
 export default function LoginPage() {
-  const { login, signup } = useAuth();
+  const { login, signup, isLoading: isAuthLoading } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
@@ -43,7 +43,7 @@ export default function LoginPage() {
   });
 
   const handleSubmit = async (values: LoginFormValues) => {
-    setIsLoading(true);
+    setIsSubmitting(true);
     setError(null);
     try {
       const success = isSignUp ? await signup(values) : await login(values);
@@ -54,9 +54,11 @@ export default function LoginPage() {
       console.error(e)
       setError('An unexpected error occurred. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
+
+  const isLoading = isAuthLoading || isSubmitting;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -89,7 +91,7 @@ export default function LoginPage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input placeholder="m@example.com" {...field} />
+                        <Input placeholder="m@example.com" {...field} disabled={isLoading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -102,7 +104,7 @@ export default function LoginPage() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input type="password" {...field} />
+                        <Input type="password" {...field} disabled={isLoading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -127,6 +129,7 @@ export default function LoginPage() {
                     setError(null)
                     form.reset();
                   }}
+                  disabled={isLoading}
                 >
                   {isSignUp
                     ? 'Already have an account? Sign In'
@@ -140,4 +143,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
 
