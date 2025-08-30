@@ -1,10 +1,12 @@
+
 'use client';
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Briefcase, FileText, Sparkles, Bot, LogOut } from 'lucide-react';
 import { useAuth } from './auth-provider';
+import { useEffect } from 'react';
 
 import {
   SidebarProvider,
@@ -19,10 +21,19 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const router = useRouter();
+  const { logout, isAuthenticated, isLoading } = useAuth();
+
+  useEffect(() => {
+    // If finished loading and not authenticated, redirect to login
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isLoading, isAuthenticated, router]);
 
   const menuItems = [
     {
@@ -42,13 +53,27 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     },
   ];
 
-  return (
+  // While checking auth, show a loading skeleton for the layout
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-screen">
+        <Skeleton className="hidden h-full w-64 md:block" />
+        <div className="flex-1">
+           <Skeleton className="h-14 w-full" />
+           <Skeleton className="h-[calc(100vh-3.5rem)] w-full p-4" />
+        </div>
+      </div>
+    );
+  }
+
+  // If authenticated, render the full app layout
+  return isAuthenticated ? (
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="shrink-0" asChild>
-              <Link href="/">
+              <Link href="/dashboard">
                 <Bot className="h-5 w-5 text-primary" />
               </Link>
             </Button>
@@ -85,12 +110,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <SidebarTrigger className="md:hidden" />
           <div className="flex-1">
             <h1 className="text-lg font-semibold">
-              {menuItems.find(item => item.href === pathname)?.label}
+              {menuItems.find(item => pathname.startsWith(item.href))?.label}
             </h1>
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>
-  );
+  ) : null; // or return a loading indicator, though the redirect should be fast
 }
