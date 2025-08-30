@@ -76,3 +76,4 @@ export function JobCard({ job, onDelete }: JobCardProps) {
     </Card>
   );
 }
+
