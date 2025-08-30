@@ -1,16 +1,9 @@
 'use server';
 
-/**
- * @fileOverview This file defines a Genkit flow for finding relevant job postings based on user input.
- *
- * - findRelevantJobPostings - A function that orchestrates the job search process.
- * - FindRelevantJobPostingsInput - The input type for the findRelevantJobPostings function.
- * - FindRelevantJobPostingsOutput - The return type for the findRelevantJobPostings function.
- */
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-
+// ------------------ Schemas ------------------
 const FindRelevantJobPostingsInputSchema = z.object({
   jobRole: z.string().describe('The desired job role, e.g., Software Engineer, Data Scientist.'),
   preferences: z
@@ -26,43 +19,55 @@ const JobPostingSchema = z.object({
 });
 
 const FindRelevantJobPostingsOutputSchema = z.object({
-  jobPostings: z
-    .array(JobPostingSchema)
-    .describe('A list of job postings curated from the web, based on the input.'),
+  jobPostings: z.array(JobPostingSchema),
 });
 export type FindRelevantJobPostingsOutput = z.infer<typeof FindRelevantJobPostingsOutputSchema>;
 export type JobPosting = z.infer<typeof JobPostingSchema>;
 
+// ------------------ Prompt ------------------
+const findJobsPrompt = ai.definePrompt({
+  name: 'findJobsPrompt',
+  input: {
+    schema: z.object({
+      userInput: FindRelevantJobPostingsInputSchema,
+      jobs: z.array(JobPostingSchema),
+    }),
+  },
+  output: { schema: FindRelevantJobPostingsOutputSchema },
+  prompt: `You are an AI assistant helping the user find relevant job postings.
+
+User query:
+Role: {{{userInput.jobRole}}}
+Preferences: {{{userInput.preferences}}}
+
+Candidate jobs:
+{{#each jobs}}
+- {{title}} ({{url}})
+{{/each}}
+
+Instructions:
+1. Filter the jobs so only those relevant to the user remain.
+2. Prefer jobs that match the user's preferences (e.g., location, role).
+3. Return only valid URLs given above, do not make up new ones.
+4. Return an empty list if none match.`,
+});
+
+// ------------------ Flow ------------------
 export async function findRelevantJobPostings(
   input: FindRelevantJobPostingsInput
 ): Promise<FindRelevantJobPostingsOutput> {
-  return findRelevantJobPostingsFlow(input);
+  // Fetch from Adzuna
+  const apiUrl = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${process.env.ADZUNA_APP_ID}&app_key=${process.env.ADZUNA_APP_KEY}&what=${encodeURIComponent(input.jobRole)}&where=${encodeURIComponent(input.preferences ?? '')}&max_days_old=7`;
+  
+  const res = await fetch(apiUrl);
+  const data = await res.json();
+
+  const jobs = (data.results || []).map((job: any) => ({
+    title: `${job.title} at ${job.company?.display_name ?? 'Unknown'}`,
+    url: job.redirect_url,
+  }));
+
+  // Pass jobs + user input to AI for filtering
+  const { output } = await findJobsPrompt({ userInput: input, jobs });
+  return output!;
 }
-
-const findJobsPrompt = ai.definePrompt({
-  name: 'findJobsPrompt',
-  input: {schema: FindRelevantJobPostingsInputSchema},
-  output: {schema: FindRelevantJobPostingsOutputSchema},
-  prompt: `You are an expert AI job search assistant. Your task is to find currently available job postings from the web.
-
-Job Role: {{{jobRole}}}
-Preferences: {{{preferences}}}
-
-VERY IMPORTANT INSTRUCTIONS:
-1.  **RECENCY IS CRITICAL**: Only include jobs posted within the **LAST 7 DAYS**. Do not include older jobs under any circumstances.
-2.  **VERIFY ALL LINKS**: You MUST verify that every single link you provide is currently active and leads directly to the job application page. Do not provide links to expired, closed, or "no longer available" positions.
-3.  **SEARCH FRESH**: Perform a new search every time. Do not use cached or old results.
-4.  Return a list of relevant job postings. If you cannot find any recent, active jobs, return an empty list.`,
-});
-
-const findRelevantJobPostingsFlow = ai.defineFlow(
-  {
-    name: 'findRelevantJobPostingsFlow',
-    inputSchema: FindRelevantJobPostingsInputSchema,
-    outputSchema: FindRelevantJobPostingsOutputSchema,
-  },
-  async input => {
-    const {output} = await findJobsPrompt(input);
-    return output!;
-  }
-);
