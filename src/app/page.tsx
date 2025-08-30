@@ -1,24 +1,33 @@
 'use client';
-
-import { useAuth } from './(main)/auth-provider';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardPage from './(main)/dashboard/page';
-import LoginPage from './login/page';
+import { useAuth } from './(main)/auth-provider';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function Home() {
-  const { isAuthenticated } = useAuth();
+// This page is the main entry point. It acts as a guard, redirecting users
+// based on their authentication status.
+export default function RootPage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    if (isAuthenticated === undefined) return; // Wait for auth status
-    if (isAuthenticated) {
-      router.replace('/dashboard');
-    } else {
-      router.replace('/login');
+    // Wait until the authentication status is loaded.
+    if (!isLoading) {
+      if (isAuthenticated) {
+        // If authenticated, go to the main dashboard.
+        router.replace('/dashboard');
+      } else {
+        // If not authenticated, go to the login page.
+        router.replace('/login');
+      }
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isLoading, router]);
 
-  // Render a loading state or nothing while redirecting
-  return null;
+  // Render a full-page loading skeleton while checking auth state
+  // to prevent flashes of content and provide a better UX.
+  return (
+    <div className="flex h-screen w-screen items-center justify-center">
+       <Skeleton className="h-full w-full" />
+    </div>
+  );
 }
