@@ -29,7 +29,6 @@ import jsPDF from 'jspdf';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
 
-
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ['application/pdf'];
 
@@ -207,7 +206,6 @@ export default function ResumeTailorPage() {
       }
     }
   };
-
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
