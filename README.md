@@ -12,3 +12,6 @@ npm install prisma @prisma/client
 npx prisma migrate dev --name init
 ---
 npm run genkit:watch
+---
+npm install bcrypt
+
