@@ -1,9 +1,16 @@
 'use server';
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+/**
+ * @fileOverview This file defines a function for finding relevant job postings based on user input
+ * by calling the Adzuna API directly.
+ *
+ * - findRelevantJobPostings - A function that orchestrates the job search process.
+ * - FindRelevantJobPostingsInput - The input type for the findRelevantJobPostings function.
+ * - FindRelevantJobPostingsOutput - The return type for the findRelevantJobPostings function.
+ */
 
-// ------------------ Schemas ------------------
+import {z} from 'zod';
+
 const FindRelevantJobPostingsInputSchema = z.object({
   jobRole: z.string().describe('The desired job role, e.g., Software Engineer, Data Scientist.'),
   preferences: z
@@ -19,55 +26,57 @@ const JobPostingSchema = z.object({
 });
 
 const FindRelevantJobPostingsOutputSchema = z.object({
-  jobPostings: z.array(JobPostingSchema),
+  jobPostings: z.array(JobPostingSchema).describe('A list of job postings from Adzuna.'),
 });
 export type FindRelevantJobPostingsOutput = z.infer<typeof FindRelevantJobPostingsOutputSchema>;
 export type JobPosting = z.infer<typeof JobPostingSchema>;
 
-// ------------------ Prompt ------------------
-const findJobsPrompt = ai.definePrompt({
-  name: 'findJobsPrompt',
-  input: {
-    schema: z.object({
-      userInput: FindRelevantJobPostingsInputSchema,
-      jobs: z.array(JobPostingSchema),
-    }),
-  },
-  output: { schema: FindRelevantJobPostingsOutputSchema },
-  prompt: `You are an AI assistant helping the user find relevant job postings.
-
-User query:
-Role: {{{userInput.jobRole}}}
-Preferences: {{{userInput.preferences}}}
-
-Candidate jobs:
-{{#each jobs}}
-- {{title}} ({{url}})
-{{/each}}
-
-Instructions:
-1. Filter the jobs so only those relevant to the user remain.
-2. Prefer jobs that match the user's preferences (e.g., location, role).
-3. Return only valid URLs given above, do not make up new ones.
-4. Return an empty list if none match.`,
-});
-
-// ------------------ Flow ------------------
 export async function findRelevantJobPostings(
   input: FindRelevantJobPostingsInput
 ): Promise<FindRelevantJobPostingsOutput> {
-  // Fetch from Adzuna
-  const apiUrl = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${process.env.ADZUNA_APP_ID}&app_key=${process.env.ADZUNA_APP_KEY}&what=${encodeURIComponent(input.jobRole)}&where=${encodeURIComponent(input.preferences ?? '')}&max_days_old=7`;
+  const appId = process.env.ADZUNA_APP_ID;
+  const appKey = process.env.ADZUNA_APP_KEY;
+
+  console.log('Attempting to find jobs with input:', input);
+
+  if (!appId || !appKey) {
+    console.error('Adzuna API credentials are not set in the environment variables.');
+    return { jobPostings: [] };
+  }
   
-  const res = await fetch(apiUrl);
-  const data = await res.json();
+  console.log('Adzuna App ID found, proceeding with API call.');
 
-  const jobs = (data.results || []).map((job: any) => ({
-    title: `${job.title} at ${job.company?.display_name ?? 'Unknown'}`,
-    url: job.redirect_url,
-  }));
+  const what = encodeURIComponent(input.jobRole);
+  const where = encodeURIComponent(input.preferences || 'usa'); // Default to 'usa' if no preference
+  const url = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${appId}&app_key=${appKey}&what=${what}&where=${where}&results_per_page=20&content-type=application/json`;
 
-  // Pass jobs + user input to AI for filtering
-  const { output } = await findJobsPrompt({ userInput: input, jobs });
-  return output!;
+  console.log('Fetching from URL:', url);
+
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error(`Adzuna API request failed with status: ${response.status}`, errorBody);
+      return { jobPostings: [] };
+    }
+
+    const data = await response.json();
+    
+    // Log what we received from Adzuna for debugging
+    console.log('Received data from Adzuna:', JSON.stringify(data, null, 2));
+
+    const jobs: JobPosting[] = (data.results || []).map((job: any) => ({
+      title: `${job.title} at ${job.company?.display_name || 'Unknown'}`,
+      url: job.redirect_url,
+    }));
+    
+    console.log(`Successfully mapped ${jobs.length} jobs.`);
+    return { jobPostings: jobs };
+
+  } catch (error) {
+    console.error('An unexpected error occurred while fetching from Adzuna:', error);
+    return { jobPostings: [] };
+  }
 }
+
