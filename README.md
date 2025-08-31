@@ -1,7 +1,7 @@
 # ai-job-finder
 
 
-npm install
+npm install /n
 npm install uuid
 npx prisma init
 npm install prisma @prisma/client
