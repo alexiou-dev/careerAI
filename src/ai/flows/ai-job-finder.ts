@@ -46,9 +46,10 @@ export async function findRelevantJobPostings(
   
   console.log('Adzuna App ID found, proceeding with API call.');
 
-  const what = encodeURIComponent(input.jobRole);
-  const where = encodeURIComponent(input.preferences || 'usa'); // Default to 'usa' if no preference
-  const url = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${appId}&app_key=${appKey}&what=${what}&where=${where}&results_per_page=20&content-type=application/json`;
+  const what = encodeURIComponent(`${input.jobRole} ${input.preferences || ''}`);
+  const url = `https://api.adzuna.com/v1/api/jobs/gb/search/1?app_id=${appId}&app_key=${appKey}&what=${what}&results_per_page=20&content-type=application/json`;
+
+
 
   console.log('Fetching from URL:', url);
 
@@ -79,4 +80,5 @@ export async function findRelevantJobPostings(
     return { jobPostings: [] };
   }
 }
+
 
