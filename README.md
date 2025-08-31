@@ -8,3 +8,5 @@ npm install
 npm install uuid
 
 npx prisma migrate dev --name init
+
+npm run genkit:watch
