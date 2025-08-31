@@ -1,37 +1,59 @@
-import { useState, useEffect } from 'react';
+'use client';
 
-export type Resume = {
-  id: string;
-  name: string;
-  content: string;
-  createdAt: number;
-};
+import { useState, useEffect, useCallback } from 'react';
+import type { SavedResume } from '@/types';
+
+const STORE_KEY = 'careerai-resumes';
 
 export function useResumeStore() {
-  const [resumes, setResumes] = useState<Resume[]>([]);
+  const [resumes, setResumes] = useState<SavedResume[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem('resumes');
-    if (stored) setResumes(JSON.parse(stored));
+    try {
+      const items = window.localStorage.getItem(STORE_KEY);
+      if (items) {
+        setResumes(JSON.parse(items));
+      }
+    } catch (error) {
+      console.error('Failed to load resumes from localStorage', error);
+    } finally {
+      setIsLoaded(true);
+    }
   }, []);
 
-  const saveResume = (resume: Resume) => {
-    const updated = [...resumes, resume];
-    setResumes(updated);
-    localStorage.setItem('resumes', JSON.stringify(updated));
-  };
+  useEffect(() => {
+    if (isLoaded) {
+      try {
+        const sortedResumes = [...resumes].sort((a, b) => b.createdAt - a.createdAt);
+        window.localStorage.setItem(STORE_KEY, JSON.stringify(sortedResumes));
+      } catch (error) {
+        console.error('Failed to save resumes to localStorage', error);
+      }
+    }
+  }, [resumes, isLoaded]);
 
-  const deleteResume = (id: string) => {
-    const updated = resumes.filter(r => r.id !== id);
-    setResumes(updated);
-    localStorage.setItem('resumes', JSON.stringify(updated));
-  };
+  const addResume = useCallback((resume: Omit<SavedResume, 'id' | 'createdAt'>) => {
+    const newResume: SavedResume = {
+      ...resume,
+      id: `${Date.now()}-${Math.random()}`,
+      createdAt: Date.now(),
+    };
+    setResumes((prevResumes) => [newResume, ...prevResumes]);
+    return newResume;
+  }, []);
+  
+  const deleteResume = useCallback((resumeId: string) => {
+    setResumes((prevResumes) => prevResumes.filter((resume) => resume.id !== resumeId));
+  }, []);
 
-  const renameResume = (id: string, newName: string) => {
-    const updated = resumes.map(r => r.id === id ? { ...r, name: newName } : r);
-    setResumes(updated);
-    localStorage.setItem('resumes', JSON.stringify(updated));
-  };
+  const renameResume = useCallback((resumeId: string, newName: string) => {
+    setResumes((prevResumes) =>
+      prevResumes.map((resume) =>
+        resume.id === resumeId ? { ...resume, name: newName } : resume
+      )
+    );
+  }, []);
 
-  return { resumes, saveResume, deleteResume, renameResume };
+  return { resumes, addResume, deleteResume, renameResume, isLoaded };
 }
