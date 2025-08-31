@@ -16,12 +16,24 @@ import { Bot, LogIn } from 'lucide-react';
 import { useAuth } from '@/app/(main)/auth-provider';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, signup } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    login();
+    setError('');
+
+    let success = false;
+    if (isSignUp) {
+      success = await signup(email, password);
+      if (!success) setError('Email already exists.');
+    } else {
+      success = await login(email, password);
+      if (!success) setError('Invalid email or password.');
+    }
   };
 
   return (
@@ -36,18 +48,32 @@ export default function LoginPage() {
             <CardHeader>
               <CardTitle className="text-2xl">{isSignUp ? 'Sign Up' : 'Sign In'}</CardTitle>
               <CardDescription>
-                Enter your email below to {isSignUp ? 'create an account' : 'login to your account'}.
+                Enter your email and password to {isSignUp ? 'create an account' : 'login'}.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="m@example.com" required />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="m@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" required />
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
               </div>
+              {error && <p className="text-red-500 text-sm">{error}</p>}
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full">
@@ -71,4 +97,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
