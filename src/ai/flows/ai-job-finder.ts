@@ -46,8 +46,9 @@ export async function findRelevantJobPostings(
   
   console.log('Adzuna App ID found, proceeding with API call.');
 
+  const page = Math.floor(Math.random() * 5) + 1; // Get a random page from 1 to 5
   const what = encodeURIComponent(`${input.jobRole} ${input.preferences || ''}`);
-  const url = `https://api.adzuna.com/v1/api/jobs/gb/search/1?app_id=${appId}&app_key=${appKey}&what=${what}&results_per_page=20&content-type=application/json`;
+  const url = `https://api.adzuna.com/v1/api/jobs/gb/search/${page}?app_id=${appId}&app_key=${appKey}&what=${what}&results_per_page=20&content-type=application/json`;
 
 
 
@@ -80,5 +81,3 @@ export async function findRelevantJobPostings(
     return { jobPostings: [] };
   }
 }
-
-
