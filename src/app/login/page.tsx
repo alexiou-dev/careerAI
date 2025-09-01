@@ -26,13 +26,20 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
 
-    let success = false;
-    if (isSignUp) {
-      success = await signup(email, password);
-      if (!success) setError('Email already exists.');
-    } else {
-      success = await login(email, password);
-      if (!success) setError('Invalid email or password.');
+    try {
+      if (isSignUp) {
+        await signup(email, password);
+        // If it didn't throw, treat as success
+        setError('');
+      } else {
+        await login(email, password);
+        setError('');
+      }
+    } catch (err: any) {
+      // Fallback error handling since we don’t get {success, message}
+      setError(
+        isSignUp ? 'Email already exists.' : 'Invalid email or password.'
+      );
     }
   };
 
@@ -46,9 +53,12 @@ export default function LoginPage() {
         <Card className="w-full max-w-sm">
           <form onSubmit={handleSubmit}>
             <CardHeader>
-              <CardTitle className="text-2xl">{isSignUp ? 'Sign Up' : 'Sign In'}</CardTitle>
+              <CardTitle className="text-2xl">
+                {isSignUp ? 'Sign Up' : 'Sign In'}
+              </CardTitle>
               <CardDescription>
-                Enter your email and password to {isSignUp ? 'create an account' : 'login'}.
+                Enter your email and password to{' '}
+                {isSignUp ? 'create an account' : 'login'}.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
