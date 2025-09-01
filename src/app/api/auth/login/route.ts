@@ -1,25 +1,16 @@
-import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
-export async function POST(request: Request) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') return res.status(405).end();
+  const { email } = req.body;
+
   try {
-    const { email } = await request.json();
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
-    if (!email) {
-      return NextResponse.json({ message: 'Email is required' }, { status: 400 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
-    }
-
-    return NextResponse.json(user, { status: 200 });
+    res.status(200).json(user);
   } catch (error) {
-    console.error('Login API Error:', error);
-    return NextResponse.json({ message: 'An unexpected error occurred.' }, { status: 500 });
+    res.status(500).json({ error: 'Server error' });
   }
 }
