@@ -5,6 +5,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
+import { useResumeStore } from '@/hooks/use-resume-store';
+
 import {
   Card,
   CardContent,
@@ -22,12 +24,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Sparkles, Loader2, Upload, FileText, Copy, Check, Download, FileType } from 'lucide-react';
+import { Sparkles, Loader2, Upload, FileText, Copy, Check, Download, FileType, Save } from 'lucide-react';
 import { tailorResume } from '@/ai/flows/tailor-resume';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
+
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ['application/pdf'];
@@ -48,10 +51,13 @@ type ResumeTailorFormValues = z.infer<typeof formSchema>;
 
 export default function ResumeTailorPage() {
   const [tailoredResume, setTailoredResume] = useState<string | null>(null);
+  const [originalJobDescription, setOriginalJobDescription] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState('');
   const [hasCopied, setHasCopied] = useState(false);
   const { toast } = useToast();
+  const { addResume } = useResumeStore();
+
 
   const form = useForm<ResumeTailorFormValues>({
     resolver: zodResolver(formSchema),
@@ -75,6 +81,7 @@ export default function ResumeTailorPage() {
   async function onSubmit(values: ResumeTailorFormValues) {
     setIsLoading(true);
     setTailoredResume(null);
+    setOriginalJobDescription('');
     try {
       const file = values.resume[0];
       const resumePdfDataUri = await fileToDataUri(file);
@@ -83,6 +90,7 @@ export default function ResumeTailorPage() {
         jobDescription: values.jobDescription,
       });
       setTailoredResume(result.tailoredResume);
+      setOriginalJobDescription(values.jobDescription);
     } catch (error) {
       console.error(error);
       toast({
@@ -120,16 +128,15 @@ export default function ResumeTailorPage() {
         const margin = 15;
         let y = margin;
         
-        // Split text into lines
         const lines = doc.splitTextToSize(tailoredResume, doc.internal.pageSize.width - margin * 2);
 
         lines.forEach((line: string) => {
-            if (y + 5 > pageHeight - margin) { // Check if new page is needed
+            if (y + 5 > pageHeight - margin) {
                 doc.addPage();
                 y = margin;
             }
             doc.text(line, margin, y);
-            y += 5; // Line height
+            y += 5;
         });
 
         doc.save('tailored-resume.pdf');
@@ -206,6 +213,21 @@ export default function ResumeTailorPage() {
       }
     }
   };
+
+  const handleSaveResume = () => {
+    if (tailoredResume && originalJobDescription) {
+      const defaultName = `Resume for "${originalJobDescription.substring(0, 40)}..."`;
+      addResume({ name: defaultName, tailoredResume, jobDescription: originalJobDescription });
+      toast({ title: "Resume saved successfully!" });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error saving resume",
+        description: "No resume content to save.",
+      });
+    }
+  };
+
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
@@ -291,6 +313,15 @@ export default function ResumeTailorPage() {
                 </div>
                  {tailoredResume && (
                     <div className="flex items-center gap-1">
+                      <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={handleSaveResume}
+                          aria-label="Save resume"
+                      >
+                          <Save className="h-4 w-4" />
+                      </Button>
                       <Button
                           variant="ghost"
                           size="icon"
