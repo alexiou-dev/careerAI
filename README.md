@@ -14,4 +14,5 @@ npx prisma migrate dev --name init
 npm run genkit:watch
 ---
 npm install bcrypt
-
+---
+npm install jsonwebtoken
