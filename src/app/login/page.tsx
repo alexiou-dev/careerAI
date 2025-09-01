@@ -45,7 +45,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="flex flex-col items-center space-y-4">
+       <div className="w-full max-w-sm flex flex-col items-center space-y-4">
         <div className="flex items-center gap-2 text-primary">
           <Bot className="h-8 w-8" />
           <h1 className="text-3xl font-bold">CareerAI</h1>
