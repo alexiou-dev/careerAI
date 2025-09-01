@@ -1,32 +1,25 @@
-import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { email, name } = await request.json();
+    const { email, password } = await req.json();
 
-    if (!email || !name) {
-      return NextResponse.json({ message: 'Email and name are required' }, { status: 400 });
-    }
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) return NextResponse.json({ error: "Email already exists" }, { status: 400 });
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user
+    const user = await prisma.user.create({
+      data: { email, password: hashedPassword },
     });
 
-    if (existingUser) {
-      return NextResponse.json({ message: 'A user with this email already exists.' }, { status: 409 });
-    }
-
-    const newUser = await prisma.user.create({
-      data: {
-        email,
-        name,
-      },
-    });
-
-    return NextResponse.json(newUser, { status: 201 });
-  } catch (error) {
-    console.error('Signup API Error:', error);
-    return NextResponse.json({ message: 'An unexpected error occurred.' }, { status: 500 });
+    return NextResponse.json({ id: user.id, email: user.email });
+  } catch (err) {
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
