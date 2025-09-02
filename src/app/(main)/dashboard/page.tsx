@@ -12,7 +12,7 @@ export default function JobTrackerPage() {
     <div className="flex h-full flex-col">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Job Application Tracker</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Track your job applications</h1>
           <p className="text-muted-foreground">
             Manage your job applications with ease. Drag and drop cards to update status.
           </p>
@@ -31,5 +31,6 @@ export default function JobTrackerPage() {
     </div>
   );
 }
+
 
 
