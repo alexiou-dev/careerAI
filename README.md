@@ -11,8 +11,9 @@ npm install prisma @prisma/client
 ---
 npx prisma migrate dev --name init
 ---
+npm install autoprefixer --save-dev
+---
 npm run genkit:watch
 ---
 npm install bcrypt
----
-npm install jsonwebtoken
+
