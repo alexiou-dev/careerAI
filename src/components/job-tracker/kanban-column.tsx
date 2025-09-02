@@ -6,7 +6,7 @@ import { JobCard } from './job-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { FileClock, MessageSquare, XCircle } from 'lucide-react';
+import { FileClock, MessageSquare, XCircle, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
 
 interface KanbanColumnProps {
@@ -20,6 +20,7 @@ const statusConfig = {
   Applied: { icon: FileClock, color: 'text-blue-500' },
   Interviewing: { icon: MessageSquare, color: 'text-yellow-500' },
   Rejected: { icon: XCircle, color: 'text-red-500' },
+  Accepted: { icon: CheckCircle2, color: 'text-green-500' },
 };
 
 export function KanbanColumn({ status, jobs, updateJobStatus, deleteJob }: KanbanColumnProps) {
