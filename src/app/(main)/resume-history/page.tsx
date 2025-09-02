@@ -48,7 +48,7 @@ export default function ResumeHistoryPage() {
   return (
     <>
        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Resume History</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Review your resumes</h1>
           <p className="text-muted-foreground">
             View and manage your previously generated tailored resumes.
           </p>
