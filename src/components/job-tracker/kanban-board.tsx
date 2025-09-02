@@ -1,7 +1,7 @@
 import type { Job, JobStatus } from '@/types';
 import { KanbanColumn } from './kanban-column';
 
-const statuses: JobStatus[] = ['Applied', 'Interviewing', 'Rejected'];
+const statuses: JobStatus[] = ['Applied', 'Interviewing', 'Rejected', 'Accepted'];
 
 interface KanbanBoardProps {
   jobs: Job[];
@@ -11,7 +11,7 @@ interface KanbanBoardProps {
 
 export function KanbanBoard({ jobs, updateJobStatus, deleteJob }: KanbanBoardProps) {
   return (
-    <div className="grid flex-1 grid-cols-1 items-start gap-6 md:grid-cols-3">
+    <div className="grid flex-1 grid-cols-1 items-start gap-6 md:grid-cols-2 lg:grid-cols-4">
       {statuses.map((status) => (
         <KanbanColumn
           key={status}
