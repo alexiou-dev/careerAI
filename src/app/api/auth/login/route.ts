@@ -1,16 +1,23 @@
-import prisma from '@/lib/prisma';
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') return res.status(405).end();
-  const { email } = req.body;
-
+export async function POST(req: Request) {
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    const { email, password } = await req.json();
 
-    res.status(200).json(user);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return NextResponse.json({ success: false, message: "Account does not exist." }, { status: 404 });
+    }
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
+      return NextResponse.json({ success: false, message: "Invalid password." }, { status: 401 });
+    }
+
+    return NextResponse.json({ success: true, user: { email: user.email } });
+  } catch (err) {
+    return NextResponse.json({ success: false, message: "Login failed." }, { status: 500 });
   }
 }
