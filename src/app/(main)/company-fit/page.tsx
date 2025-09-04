@@ -150,6 +150,7 @@ export default function CompanyFitPage() {
           </Form>
         </CardContent>
       </Card>
+      
       <Card className="flex flex-col">
         <CardHeader>
           <CardTitle>Analysis Result</CardTitle>
@@ -164,26 +165,66 @@ export default function CompanyFitPage() {
               <Skeleton className="h-32 w-full rounded" />
             </div>
           )}
+
           {analysisResult && (
             <div className="space-y-6">
-                <div>
-                    <h3 className="font-semibold text-lg">Overall Fit Score: {analysisResult.overallFitScore}/100</h3>
-                    <Progress value={analysisResult.overallFitScore} className="mt-2" />
+              <div>
+                <h3 className="font-semibold text-lg">
+                  Overall Fit Score: {analysisResult.overallFitScore}/100
+                </h3>
+                <Progress value={analysisResult.overallFitScore} className="mt-2" />
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-lg">Company Culture Summary</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {analysisResult.companyCultureSummary}
+                </p>
+                <div className="mt-2 space-y-1">
+                  <a
+                    href={analysisResult.links.glassdoor}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline"
+                  >
+                    Glassdoor Reviews
+                  </a>
+                  <br />
+                  <a
+                    href={analysisResult.links.careers}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline"
+                  >
+                    Company Careers
+                  </a>
+                  <br />
+                  <a
+                    href={analysisResult.links.news}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline"
+                  >
+                    Recent News Coverage
+                  </a>
                 </div>
-                <div>
-                    <h3 className="font-semibold text-lg">Company Culture Summary</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{analysisResult.companyCultureSummary}</p>
-                </div>
-                <div>
-                    <h3 className="font-semibold text-lg">Alignment with Your Preferences</h3>
-                    <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{analysisResult.alignmentAnalysis}</p>
-                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-lg">Alignment with Your Preferences</h3>
+                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">
+                  {analysisResult.alignmentAnalysis}
+                </p>
+              </div>
             </div>
           )}
+
           {!isLoading && !analysisResult && (
             <div className="flex flex-1 flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
               <Building2 className="h-10 w-10 text-muted-foreground" />
-              <p className="mt-4 text-sm text-muted-foreground">Your analysis will be shown here once generated.</p>
+              <p className="mt-4 text-sm text-muted-foreground">
+                Your analysis will be shown here once generated.
+              </p>
             </div>
           )}
         </CardContent>
