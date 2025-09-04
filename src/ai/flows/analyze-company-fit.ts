@@ -7,12 +7,14 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 import {
   AnalyzeCompanyFitInputSchema,
   AnalyzeCompanyFitOutputSchema,
   type AnalyzeCompanyFitInput,
   type AnalyzeCompanyFitOutput,
 } from '@/types/ai-company-fit';
+import { googleSearch } from '@/lib/googleSearch';
 
 export async function analyzeCompanyFit(
   input: AnalyzeCompanyFitInput
@@ -20,30 +22,84 @@ export async function analyzeCompanyFit(
   return analyzeCompanyFitFlow(input);
 }
 
+const findCompanyInfo = ai.defineTool(
+  {
+    name: 'findCompanyInfo',
+    description: 'Finds key public URLs for a company: their careers page, Glassdoor page, and a Google News search.',
+    inputSchema: z.object({ companyName: z.string() }),
+    outputSchema: z.object({
+      careersUrl: z.string().url(),
+      glassdoorUrl: z.string().url(),
+      newsUrl: z.string().url(),
+    }),
+  },
+  async ({ companyName }) => {
+    // This is a helper to find the most likely URL from search results.
+    const findUrl = async (query: string) => {
+      try {
+        const results = await googleSearch(query);
+        return results[0]?.url || `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+      } catch (e) {
+        return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+      }
+    };
+
+    const [careersUrl, glassdoorUrl] = await Promise.all([
+      findUrl(`${companyName} careers`),
+      findUrl(`${companyName} glassdoor`),
+    ]);
+
+    const newsUrl = `https://www.google.com/search?q=${encodeURIComponent(companyName)}&tbm=nws`;
+
+    return { careersUrl, glassdoorUrl, newsUrl };
+  }
+);
+
+
 const prompt = ai.definePrompt({
   name: 'analyzeCompanyFitPrompt',
   input: { schema: AnalyzeCompanyFitInputSchema },
   output: { schema: AnalyzeCompanyFitOutputSchema },
   prompt: `You are an expert career and company culture analyst. Your task is to analyze a company based on public knowledge and assess its fit with a user's stated preferences.
 
-**Company to Analyze:**
-{{companyName}}
+Company to Analyze: {{companyName}}
 
-**User's Key Preferences:**
+User's Key Preferences:
 {{#each userPreferences}}
 - {{{this}}}
 {{/each}}
 
-**Instructions:**
+Instructions:
 
-1.  **Summarize Company Culture**: Based on your knowledge from public sources (like news articles, mission statements, and employee reviews on sites like Glassdoor), write a concise summary of the company culture for **{{companyName}}**. Touch upon aspects like work environment, values, and employee treatment.
+Company Culture Summary: Write a single, concise paragraph summarizing {{companyName}}'s culture, leadership influence, values, collaboration style, flexibility, innovation focus, and work environment. Avoid mentioning numeric ratings or scores. At the end of the paragraph, include three clickable links to sources (Glassdoor, company website, news articles) formatted exactly like this (Markdown):
 
-2.  **Analyze Alignment**: Write a detailed analysis of how the company's culture aligns with each of the user's stated preferences. For each preference, explain why the company is a good or poor match.
+Learn more:  
+- [Glassdoor Reviews]({{glassdoorUrl}})  
+- [Company Careers]({{careersUrl}})  
+- [Recent News Coverage]({{newsUrl}})
 
-3.  **Calculate Overall Fit Score**: Provide an "Overall Fit Score" from 0 to 100. A score of 100 means a perfect match, while a score of 0 means no match at all. This score should be a direct reflection of your alignment analysis. Be realistic.
+Alignment with Your Preferences: For each user preference, write a narrative explaining how the company aligns or does not align with it. Give specific examples when possible. Structure each preference as:
+Regarding {Preference Name}: Description of alignment, strengths, weaknesses, and context.
 
-Generate the analysis based on these instructions.`,
+Overall Fit Score: Provide a realistic score from 0-100 that reflects the alignment analysis (but do not include numeric scores in the narrative paragraphs above; the user sees the score separately).
+
+Output Format: Return all text as a single string with the structure:
+
+Company Culture Summary  
+[Summary paragraph]
+
+Learn more:  
+- [Glassdoor Reviews]({{glassdoorUrl}})  
+- [Company Careers]({{careersUrl}})  
+- [Recent News Coverage]({{newsUrl}})
+
+Alignment with Your Preferences  
+Regarding Work-Life Balance: ...  
+Regarding Career Growth Opportunities: ...  
+
+Generate the analysis according to these instructions.`
 });
+
 
 const analyzeCompanyFitFlow = ai.defineFlow(
   {
@@ -52,7 +108,22 @@ const analyzeCompanyFitFlow = ai.defineFlow(
     outputSchema: AnalyzeCompanyFitOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    return output!;
+    const companyInfo = await findCompanyInfo({ companyName: input.companyName });
+
+    const { output } = await prompt({
+      ...input,
+      companyName: input.companyName,
+      userPreferences: input.userPreferences,
+    });
+
+    return {
+      ...output!,
+      links: {
+        glassdoor: companyInfo.glassdoorUrl,
+        careers: companyInfo.careersUrl,
+        news: companyInfo.newsUrl,
+      },
+    };
   }
 );
+
