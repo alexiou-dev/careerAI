@@ -30,7 +30,15 @@ export type AnalyzeCompanyFitInput = z.infer<typeof AnalyzeCompanyFitInputSchema
 // Schema for the AI flow output
 export const AnalyzeCompanyFitOutputSchema = z.object({
   companyCultureSummary: z.string().describe("A summary of the company's culture based on public knowledge."),
-  alignmentAnalysis: z.string().describe('An analysis of how the company aligns with the user\'s preferences.'),
-  overallFitScore: z.number().min(0).max(100).describe('A score from 0-100 representing the overall cultural fit.'),
+  alignmentAnalysis: z.string().describe("An analysis of how the company aligns with the user's preferences."),
+  overallFitScore: z.number().min(0).max(100).describe("A score from 0-100 representing the overall cultural fit."),
+  links: z.object({
+    glassdoor: z.string().url().describe("Link to Glassdoor reviews"),
+    careers: z.string().url().describe("Link to the company’s careers page"),
+    news: z.string().url().describe("Link to recent news about the company"),
+  }),
 });
+
 export type AnalyzeCompanyFitOutput = z.infer<typeof AnalyzeCompanyFitOutputSchema>;
+
+
