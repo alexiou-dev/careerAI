@@ -227,6 +227,12 @@ export default function CompanyFitPage() {
               </p>
             </div>
           )}
+        {!isLoading && !analysisResult && (
+            <div className="flex flex-1 flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
+              <Building2 className="h-10 w-10 text-muted-foreground" />
+              <p className="mt-4 text-sm text-muted-foreground">Your analysis will be shown here once generated.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
