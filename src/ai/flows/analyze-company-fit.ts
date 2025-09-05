@@ -110,20 +110,39 @@ const analyzeCompanyFitFlow = ai.defineFlow(
   async (input) => {
     const companyInfo = await findCompanyInfo({ companyName: input.companyName });
 
-    const { output } = await prompt({
-      ...input,
-      companyName: input.companyName,
-      userPreferences: input.userPreferences,
-    });
+    try {
+      const { output } = await prompt({
+        ...input,
+        companyName: input.companyName,
+        userPreferences: input.userPreferences,
+      });
 
-    return {
-      ...output!,
-      links: {
-        glassdoor: companyInfo.glassdoorUrl,
-        careers: companyInfo.careersUrl,
-        news: companyInfo.newsUrl,
-      },
-    };
+      return {
+        ...output!,
+        links: {
+          glassdoor: companyInfo.glassdoorUrl,
+          careers: companyInfo.careersUrl,
+          news: companyInfo.newsUrl,
+        },
+      };
+    } catch (err: any) {
+      if (err.message.includes("429") || err.message.includes("Too Many Requests")) {
+        // Instead of throwing, return a friendly message
+        return {
+          companyCultureSummary: "The AI service quota has been reached for today. Please try again later or check your API quota.",
+          alignmentAnalysis: "",
+          overallFitScore: 0,
+          links: {
+            glassdoor: companyInfo.glassdoorUrl,
+            careers: companyInfo.careersUrl,
+            news: companyInfo.newsUrl,
+          },
+        };
+      }
+
+      // rethrow other errors as usual
+      throw err;
+    }
   }
 );
 
