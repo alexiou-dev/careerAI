@@ -18,7 +18,7 @@ export const SalaryHistogramResponseSchema = z.object({
 // Schema for Top Companies API response
 export const TopCompanySchema = z.object({
   count: z.number(),
-  company_name: z.string(),
+  canonical_name: z.string(),
 });
 export type TopCompany = z.infer<typeof TopCompanySchema>;
 
@@ -28,9 +28,12 @@ export const TopCompaniesResponseSchema = z.object({
 
 // Schema for Regional Insights (Geodata) API response
 export const RegionalInsightSchema = z.object({
-  location: z.string(),
+  location: z.object({
+    display_name: z.string(),
+  }),
   count: z.number(),
 });
+
 export type RegionalInsight = z.infer<typeof RegionalInsightSchema>;
 
 export const RegionalInsightsResponseSchema = z.object({
