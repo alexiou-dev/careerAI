@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -233,7 +234,7 @@ export default function MarketInsightsPage() {
                 <div className="space-y-4">
                     {insights.topCompanies.map((company, index) => (
                         <div key={index} className="flex items-center justify-between">
-                            <p className="text-sm font-medium">{index + 1}. {company.company_name}</p>
+                            <p className="text-sm font-medium">{index + 1}. {company.canonical_name}</p>
                             <div className="text-sm text-muted-foreground">{company.count} openings</div>
                         </div>
                     ))}
@@ -256,14 +257,14 @@ export default function MarketInsightsPage() {
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={insights.regionalInsights} layout="vertical" margin={{ top: 5, right: 10, left: 20, bottom: 5 }}>
                   <XAxis type="number" hide />
-                  <YAxis dataKey="location" type="category" width={150} tickLine={false} axisLine={false} fontSize={12} />
+                  <YAxis dataKey="location.display_name" type="category" width={150} tickLine={false} axisLine={false} fontSize={12} />
                   <Tooltip
                      cursor={{ fill: 'hsl(var(--muted))' }}
                      content={({ active, payload }) => {
                         if (active && payload && payload.length) {
                           return (
                             <div className="rounded-lg border bg-background p-2 shadow-sm">
-                               <span className="font-bold text-foreground">{payload[0].value} postings in {payload[0].payload.location}</span>
+                               <span className="font-bold text-foreground">{payload[0].value} postings in {payload[0].payload.location.display_name}</span>
                             </div>
                           )
                         }
@@ -282,3 +283,4 @@ export default function MarketInsightsPage() {
     </div>
   );
 }
+
