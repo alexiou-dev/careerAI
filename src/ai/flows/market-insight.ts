@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -51,7 +52,7 @@ async function fetchAdzunaAPI(
  * Fetches salary histogram data for a given job role and location.
  */
 export async function getSalaryHistogram(
-  input: z.infer<typeof MarketInsightsFormSchema)
+  input: z.infer<typeof MarketInsightsFormSchema>
 ) {
   const params: Record<string, string> = {};
   if (input.location) params.where = input.location;
@@ -65,7 +66,7 @@ export async function getSalaryHistogram(
  * Fetches the top companies hiring for a given job role.
  */
 export async function getTopCompanies(
-  input: z.infer<typeof MarketInsightsFormSchema)
+  input: z.infer<typeof MarketInsightsFormSchema>
 ) {
   const params: Record<string, string> = {};
   if (input.jobRole) params.what = input.jobRole;
@@ -78,7 +79,7 @@ export async function getTopCompanies(
  * Fetches regional job distribution data (geodata).
  */
 export async function getRegionalInsights(
-  input: z.infer<typeof MarketInsightsFormSchema)
+  input: z.infer<typeof MarketInsightsFormSchema>
 ) {
   const params: Record<string, string> = {};
   if (input.jobRole) params.what = input.jobRole;
