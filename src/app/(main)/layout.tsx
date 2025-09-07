@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Briefcase, FileText, Sparkles, Bot, LogOut, History, Settings, PenSquare } from 'lucide-react';
+import { Briefcase, FileText, Sparkles, Bot, LogOut, History, Settings, PenSquare, MessagesSquare, Lightbulb, Building2, TrendingUp  } from 'lucide-react';
 import { useAuth } from './auth-provider';
 
 import {
@@ -36,14 +36,24 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       icon: Sparkles,
     },
     {
-      href: '/resume-tailor',
-      label: 'Resume Tailor',
+      href: '/resume-generator',
+      label: 'Resume Generator',
       icon: FileText,
     },
     {
       href: '/cover-letter',
       label: 'AI Writer',
       icon: PenSquare,
+    },
+    {
+      href: '/interview-prep',
+      label: 'Interview Prep',
+      icon: MessagesSquare,
+    },
+    {
+      href: '/company-fit',
+      label: 'Company Fit',
+      icon: Building2,
     },
      {
       href: '/resume-history',
