@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Sparkles, Loader2, Copy, Check, Download, FileType, Trash2, Plus } from 'lucide-react';
+import { Sparkles, Loader2, Copy, Check, Download, FileType, Trash2, Plus, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
@@ -32,6 +33,72 @@ import {
     type ResumeBuilderFormValues,
 } from '@/types/ai-resume-builder';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+
+
+const BulletedTextarea = ({ field }: { field: any }) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const value = e.target.value;
+      const lines = value.split('\n');
+      const formattedLines = lines.map((line) => {
+        if (line.trim().length > 0 && !line.trim().startsWith('•')) {
+          return '• ' + line;
+        }
+        return line;
+      });
+      field.onChange(formattedLines.join('\n'));
+    };
+  
+    return <Textarea {...field} onChange={handleInputChange} />;
+  };
+
+const TagInput = ({ field, label }: { field: any, label: string }) => {
+    const [inputValue, setInputValue] = useState('');
+    const tags = field.value ? field.value.split('|').filter(Boolean) : [];
+  
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter' && inputValue.trim()) {
+        e.preventDefault();
+        const newTags = [...tags, inputValue.trim()];
+        field.onChange(newTags.join('|'));
+        setInputValue('');
+      }
+    };
+  
+    const removeTag = (tagToRemove: string) => {
+      const newTags = tags.filter((tag: string) => tag !== tagToRemove);
+      field.onChange(newTags.join('|'));
+    };
+  
+    return (
+      <FormItem>
+        <FormLabel>{label}</FormLabel>
+        <FormControl>
+            <div>
+                <div className="flex flex-wrap gap-2 mb-2">
+                    {tags.map((tag: string, index: number) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                        {tag}
+                        <button type="button" onClick={() => removeTag(tag)} className="ml-1 rounded-full outline-none ring-ring focus:ring-2">
+                            <X className="h-3 w-3" />
+                        </button>
+                    </Badge>
+                    ))}
+                </div>
+                <Input
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type a skill and press Enter"
+                />
+          </div>
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    );
+  };
+
 
 function GenerateResumeTab() {
   const [generatedResume, setGeneratedResume] = useState<string | null>(null);
@@ -46,19 +113,14 @@ function GenerateResumeTab() {
     jobTitle: '',
     email: '',
     phone: '',
-    linkedin: '',  
-    github: '',
-    portfolio: '',
     summary: '',
     workExperience: [
-      { jobTitle: '', company: '', location: '', startDate: '', endDate: '', responsibilities: '' }
+      { jobTitle: '', company: '', location: '', responsibilities: '' }
     ],
     education: [
-      { school: '', location: '', degree: '', fieldOfStudy: '', startDate: '', endDate: '' }
+      { school: '', location: '', degree: '', fieldOfStudy: '' }
     ],
-    leadership: [
-      { organization: '', role: '', description: '' }
-    ],
+    leadership: [],
     technicalSkills: '',
     programmingSkills: '',
     languages: '',
@@ -70,6 +132,7 @@ function GenerateResumeTab() {
   const { fields: workFields, append: appendWork, remove: removeWork } = useFieldArray({ control: form.control, name: 'workExperience' });
   const { fields: educationFields, append: appendEducation, remove: removeEducation } = useFieldArray({ control: form.control, name: 'education' });
   const { fields: leadershipFields, append: appendLeadership, remove: removeLeadership } = useFieldArray({ control: form.control, name: 'leadership' });
+  const [showProgrammingSkills, setShowProgrammingSkills] = useState(false);
 
 
   async function onSubmit(values: ResumeBuilderFormValues) {
@@ -149,6 +212,41 @@ function GenerateResumeTab() {
         }
     };
 
+    const DatePickerField = ({ field, label }: { field: any, label: string }) => {
+        const currentYear = new Date().getFullYear();
+        const years = Array.from({ length: 50 }, (_, i) => currentYear - i);
+        const months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
+        
+        const [month, year] = (field.value || '').split(' ');
+        
+        return (
+          <FormItem className="flex flex-col">
+            <FormLabel>{label}</FormLabel>
+            <div className="flex gap-2">
+              <Select
+                value={month}
+                onValueChange={(m) => field.onChange(`${m} ${year || currentYear}`)}
+              >
+                <SelectTrigger><SelectValue placeholder="Month" /></SelectTrigger>
+                <SelectContent>
+                  {months.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select
+                value={year}
+                 onValueChange={(y) => field.onChange(`${month || 'January'} ${y}`)}
+              >
+                <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
+                <SelectContent>
+                  {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <FormMessage />
+          </FormItem>
+        );
+      };
+
     return (
         <div className="grid gap-8 md:grid-cols-2">
             <Card className="h-full">
@@ -178,49 +276,49 @@ function GenerateResumeTab() {
 
                             <Separator />
                             <h3 className="text-lg font-semibold">Work Experience</h3>
-                            {workFields.map((field, index) => (
-                                <div key={field.id} className="space-y-4 p-4 border rounded-md relative">
+                            {workFields.map((item, index) => (
+                                <div key={item.id} className="space-y-4 p-4 border rounded-md relative">
                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField control={form.control} name={`workExperience.${index}.jobTitle`} render={({ field }) => (<FormItem><FormLabel>Job Title</FormLabel><FormControl><Input placeholder="Junior Data Analyst" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={form.control} name={`workExperience.${index}.company`} render={({ field }) => (<FormItem><FormLabel>Company</FormLabel><FormControl><Input placeholder="DataTech Solutions" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={form.control} name={`workExperience.${index}.location`} render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Amsterdam, Netherlands" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <FormField control={form.control} name={`workExperience.${index}.startDate`} render={({ field }) => (<FormItem><FormLabel>Start Date</FormLabel><FormControl><Input placeholder="June 2023" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                            <FormField control={form.control} name={`workExperience.${index}.endDate`} render={({ field }) => (<FormItem><FormLabel>End Date</FormLabel><FormControl><Input placeholder="July 2024" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <div className="grid grid-cols-1 gap-4 md:col-span-2 md:grid-cols-2">
+                                            <FormField control={form.control} name={`workExperience.${index}.startDate`} render={({ field }) => <DatePickerField field={field} label="Start Date" />} />
+                                            <FormField control={form.control} name={`workExperience.${index}.endDate`} render={({ field }) => <DatePickerField field={field} label="End Date" />} />
                                         </div>
                                     </div>
-                                    <FormField control={form.control} name={`workExperience.${index}.responsibilities`} render={({ field }) => (<FormItem><FormLabel>Responsibilities</FormLabel><FormControl><Textarea placeholder="• Collaborated with a cross-functional team..." className="min-h-[150px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name={`workExperience.${index}.responsibilities`} render={({ field }) => (<FormItem><FormLabel>Responsibilities</FormLabel><FormControl><BulletedTextarea field={field} /></FormControl><FormMessage /></FormItem>)} />
                                      <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => removeWork(index)}><Trash2 className="h-4 w-4" /></Button>
                                 </div>
                             ))}
-                             <Button type="button" variant="outline" size="sm" onClick={() => appendWork({ jobTitle: '', company: '', location: '', startDate: '', endDate: '', responsibilities: '' })}><Plus className="mr-2 h-4 w-4" /> Add Experience</Button>
+                             <Button type="button" variant="outline" size="sm" onClick={() => appendWork({ jobTitle: '', company: '', location: '', responsibilities: '', startDate: undefined, endDate: undefined })}><Plus className="mr-2 h-4 w-4" /> Add Experience</Button>
 
                             <Separator />
                             <h3 className="text-lg font-semibold">Education</h3>
-                            {educationFields.map((field, index) => (
-                                <div key={field.id} className="space-y-4 p-4 border rounded-md relative">
+                            {educationFields.map((item, index) => (
+                                <div key={item.id} className="space-y-4 p-4 border rounded-md relative">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField control={form.control} name={`education.${index}.school`} render={({ field }) => (<FormItem><FormLabel>School/University</FormLabel><FormControl><Input placeholder="University of Amsterdam" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={form.control} name={`education.${index}.location`} render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Amsterdam, Netherlands" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={form.control} name={`education.${index}.degree`} render={({ field }) => (<FormItem><FormLabel>Degree</FormLabel><FormControl><Input placeholder="Master of Science" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <FormField control={form.control} name={`education.${index}.fieldOfStudy`} render={({ field }) => (<FormItem><FormLabel>Field of Study</FormLabel><FormControl><Input placeholder="Data Science" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <FormField control={form.control} name={`education.${index}.startDate`} render={({ field }) => (<FormItem><FormLabel>Start Date</FormLabel><FormControl><Input placeholder="Sep 2021" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                            <FormField control={form.control} name={`education.${index}.endDate`} render={({ field }) => (<FormItem><FormLabel>End Date</FormLabel><FormControl><Input placeholder="May 2024" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <div className="grid grid-cols-1 gap-4 md:col-span-2 md:grid-cols-2">
+                                            <FormField control={form.control} name={`education.${index}.startDate`} render={({ field }) => <DatePickerField field={field} label="Start Date" />} />
+                                            <FormField control={form.control} name={`education.${index}.endDate`} render={({ field }) => <DatePickerField field={field} label="End Date" />} />
                                         </div>
                                     </div>
                                     <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => removeEducation(index)}><Trash2 className="h-4 w-4" /></Button>
                                 </div>
                             ))}
-                            <Button type="button" variant="outline" size="sm" onClick={() => appendEducation({ school: '', location: '', degree: '', fieldOfStudy: '', startDate: '', endDate: '' })}><Plus className="mr-2 h-4 w-4" /> Add Education</Button>
+                            <Button type="button" variant="outline" size="sm" onClick={() => appendEducation({ school: '', location: '', degree: '', fieldOfStudy: '', startDate: undefined, endDate: undefined })}><Plus className="mr-2 h-4 w-4" /> Add Education</Button>
                             
                             <Separator />
                             <h3 className="text-lg font-semibold">Leadership & Activities</h3>
-                             {leadershipFields.map((field, index) => (
-                                <div key={field.id} className="space-y-4 p-4 border rounded-md relative">
+                             {leadershipFields.map((item, index) => (
+                                <div key={item.id} className="space-y-4 p-4 border rounded-md relative">
                                     <FormField control={form.control} name={`leadership.${index}.organization`} render={({ field }) => (<FormItem><FormLabel>Organization/Project</FormLabel><FormControl><Input placeholder="Independent Research Project" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={form.control} name={`leadership.${index}.role`} render={({ field }) => (<FormItem><FormLabel>Your Role</FormLabel><FormControl><Input placeholder="Researcher" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={form.control} name={`leadership.${index}.description`} render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Designed and executed a self-directed research project..." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name={`leadership.${index}.description`} render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><BulletedTextarea field={field} /></FormControl><FormMessage /></FormItem>)} />
                                     <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => removeLeadership(index)}><Trash2 className="h-4 w-4" /></Button>
                                 </div>
                             ))}
@@ -230,8 +328,28 @@ function GenerateResumeTab() {
                             <Separator />
                             <h3 className="text-lg font-semibold">Skills</h3>
                             <div className="space-y-4">
-                                <FormField control={form.control} name="technicalSkills" render={({ field }) => (<FormItem><FormLabel>Technical Skills</FormLabel><FormControl><Textarea placeholder="e.g., Financial Modeling, Data Analysis, Equity Research..." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="programmingSkills" render={({ field }) => (<FormItem><FormLabel>Programming Skills</FormLabel><FormControl><Textarea placeholder="e.g., Python (Pandas, NumPy), SQL, R..." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="technicalSkills" render={({ field }) => <TagInput field={field} label="Technical Skills" />} />
+                                {showProgrammingSkills ? (
+                                    <div className="relative">
+                                        <FormField control={form.control} name="programmingSkills" render={({ field }) => <TagInput field={field} label="Programming Skills" />} />
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute -top-2 right-0 h-6 w-6"
+                                            onClick={() => {
+                                            form.setValue('programmingSkills', '');
+                                            setShowProgrammingSkills(false);
+                                            }}
+                                        >
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <Button type="button" variant="link" className="p-0" onClick={() => setShowProgrammingSkills(true)}>
+                                        <Plus className="mr-2 h-4 w-4" /> Add programming skills
+                                    </Button>
+                                )}
                                 <FormField control={form.control} name="languages" render={({ field }) => (<FormItem><FormLabel>Spoken Languages</FormLabel><FormControl><Input placeholder="e.g., English (Fluent), Greek (Native)" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             </div>
                             
