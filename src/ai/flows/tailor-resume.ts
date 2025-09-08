@@ -46,7 +46,7 @@ Job Description: {{{jobDescription}}}
 - Use single empty lines to separate paragraphs and sections.
 - For bullet points under a job, start each line with a simple '•' character, followed by a space.
 
-Generate the tailored resume based on these strict rules.`,
+Focus on **keyword optimization, ATS readability, and clear, concise language**. Generate the tailored resume based on these strict rules.`,
 });
 
 const tailorResumeFlow = ai.defineFlow(
