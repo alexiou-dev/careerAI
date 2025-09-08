@@ -11,6 +11,8 @@ const FindRelevantJobPostingsInputSchema = z.object({
   minWage: z.number().optional().describe('Minimum desired annual salary.'),
   workStyle: z.enum(['any', 'remote', 'hybrid']).optional().describe('Desired work style.'),
   other: z.string().optional().describe('Other preferences, e.g., technologies, company size.'),
+  major: z.string().optional().describe('Your field of study, e.g., Economics, Computer Science.'),
+  cvFile: z.instanceof(File).optional().describe('PDF file of your CV.'),
 });
 export type FindRelevantJobPostingsInput = z.infer<typeof FindRelevantJobPostingsInputSchema>;
 
@@ -64,6 +66,7 @@ async function fetchAdzuna(input: FindRelevantJobPostingsInput): Promise<JobPost
   let query = input.jobRole;
   if (input.other) query += ` ${input.other}`;
   if (input.workStyle && input.workStyle !== 'any') query += ` ${input.workStyle}`;
+  if (input.major) query += ` ${input.major}`; // add major to query
 
   const country = detectCountry(input.location);
   const countriesToTry = country ? [country] : ["us", "gb", "ca", "de", "fr"];
@@ -109,9 +112,13 @@ async function fetchJooble(input: FindRelevantJobPostingsInput): Promise<JobPost
   const apiKey = process.env.JOOBLE_API_KEY;
   if (!apiKey) return [];
 
+  // Map Greece -> Hellenic Republic
+  let joobleLocation = input.location || "";
+  if (joobleLocation.toLowerCase() === "greece") joobleLocation = "Hellenic Republic";
+
   const payload: any = {
     keywords: input.jobRole,
-    location: input.location || "",
+    location: joobleLocation,
     salary: input.minWage || undefined,
     contract_type: input.workStyle === "remote" ? "remote" : undefined,
     page: 1,
@@ -119,6 +126,11 @@ async function fetchJooble(input: FindRelevantJobPostingsInput): Promise<JobPost
   };
 
   if (input.other) payload.keywords += ` ${input.other}`;
+  if (input.major) payload.keywords += ` ${input.major}`;
+
+  // Optionally, you could attach CV file data if Jooble supported it
+  // For now, just passing it in payload is enough placeholder
+  if (input.cvFile) payload.cvFileName = input.cvFile.name;
 
   try {
     const res = await fetch("https://jooble.org/api/" + apiKey, {
@@ -144,12 +156,14 @@ async function fetchJooble(input: FindRelevantJobPostingsInput): Promise<JobPost
 export async function findRelevantJobPostings(
   input: FindRelevantJobPostingsInput
 ): Promise<FindRelevantJobPostingsOutput> {
+  // Use major as fallback if jobRole is empty
+  if (!input.jobRole && input.major) input.jobRole = input.major;
+
   const [adzunaJobs, joobleJobs] = await Promise.all([
     fetchAdzuna(input),
     fetchJooble(input),
   ]);
 
-  // Remove duplicates by URL
   const allJobsMap = new Map<string, JobPosting>();
   [...adzunaJobs, ...joobleJobs].forEach(job => allJobsMap.set(job.url, job));
 
