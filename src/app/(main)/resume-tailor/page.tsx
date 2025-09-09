@@ -91,13 +91,21 @@ export default function ResumeTailorPage() {
       });
       setTailoredResume(result.tailoredResume);
       setOriginalJobDescription(values.jobDescription);
-    } catch (error) {
-      console.error(error);
-      toast({
-        variant: 'destructive',
-        title: 'Error tailoring resume',
-        description: 'Something went wrong. Please check your file and try again.',
-      });
+   } catch (error: any) {
+        if (error.message?.includes('RATE_LIMIT_EXCEEDED')) {
+            toast({
+              variant: 'destructive',
+              title: 'API Quota Exceeded',
+              description: "You've reached the daily limit for the free tier. Please try again tomorrow.",
+            });
+        } else {
+            console.error(error);
+            toast({
+                variant: 'destructive',
+                title: 'Error tailoring resume',
+                description: 'Something went wrong. Please check your file and try again.',
+            });
+        }
     } finally {
       setIsLoading(false);
     }
