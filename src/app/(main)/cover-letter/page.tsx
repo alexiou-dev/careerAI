@@ -80,13 +80,21 @@ export default function AIWriterPage() {
         documentType: values.documentType,
       });
       setGeneratedDocument(result.generatedDocument);
-    } catch (error) {
-      console.error(error);
-      toast({
-        variant: 'destructive',
-        title: 'Error generating document',
-        description: 'Something went wrong. Please check your inputs and try again.',
-      });
+    } catch (error: any) {
+      if (error.message?.includes('RATE_LIMIT_EXCEEDED')) {
+        toast({
+          variant: 'destructive',
+          title: 'API Quota Exceeded',
+          description: "You've reached the daily limit for the free tier. Please try again tomorrow.",
+        });
+      } else {
+        console.error(error);
+        toast({
+          variant: 'destructive',
+          title: 'Error generating document',
+          description: 'Something went wrong. Please check your inputs and try again.',
+        });
+      }
     } finally {
       setIsLoading(false);
     }
