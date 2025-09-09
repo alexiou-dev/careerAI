@@ -104,7 +104,14 @@ const generateResumeFromScratchFlow = ai.defineFlow(
             description: lead.description ? lead.description.split('\n').map(line => line.trim().startsWith('•') ? line : `• ${line}`).join('\n') : ''
         })) : [],
     };
-    const { output } = await prompt(processedInput);
-    return output!;
+    try {
+        const { output } = await prompt(processedInput);
+        return output!;
+    } catch (error: any) {
+        if (error.message?.includes('429') || error.message?.includes('quota')) {
+            throw new Error('RATE_LIMIT_EXCEEDED');
+        }
+        throw error;
+    }
   }
 );
