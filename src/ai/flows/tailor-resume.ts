@@ -56,7 +56,15 @@ const tailorResumeFlow = ai.defineFlow(
     outputSchema: TailorResumeOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    try {
+      const {output} = await prompt(input);
+      return output!;
+    } catch (error: any) {
+        if (error.message?.includes('429') || error.message?.includes('quota')) {
+            throw new Error('RATE_LIMIT_EXCEEDED');
+        }
+        throw error;
+    }
   }
 );
+
