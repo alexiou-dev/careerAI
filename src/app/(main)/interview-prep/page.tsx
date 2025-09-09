@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Loader2, Sparkles, User, Trash2, Pencil, Send, Check } from 'lucide-react';
+import { Bot, Loader2, Sparkles, User, Trash2, Pencil, Send, ArrowDown } from 'lucide-react';
 import {
     generateInterviewQuestions,
     getExampleAnswer,
@@ -80,7 +80,15 @@ export default function InterviewPrepPage() {
   const [renameValue, setRenameValue] = useState('');
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const { toast } = useToast();
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+
+
+  // ref to the messages viewport (the element that actually scrolls)
+  const messagesViewportRef = useRef<HTMLDivElement | null>(null);
+
+  // when true => allow auto-scrolling to bottom; when false => user is reviewing older messages
+  const autoScrollRef = useRef<boolean>(true);
+  const AUTO_SCROLL_THRESHOLD_PX = 150; // within this px from bottom we consider "at bottom"
 
   useEffect(() => {
     try {
@@ -93,14 +101,17 @@ export default function InterviewPrepPage() {
     }
   }, []);
 
+  // Auto-scroll when messages change, only if user is near bottom
   useEffect(() => {
-    if (scrollAreaRef.current) {
-        scrollAreaRef.current.scrollTo({
-            top: scrollAreaRef.current.scrollHeight,
-            behavior: 'smooth',
-        });
+    const el = messagesViewportRef.current;
+    if (!el) return;
+    if (autoScrollRef.current) {
+      // small timeout to ensure layout updated
+      requestAnimationFrame(() => {
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      });
     }
-  }, [messages])
+  }, [messages]);
 
   const saveInterviews = useCallback((updatedInterviews: StoredInterview[], newActiveInterview?: StoredInterview | null) => {
     setInterviews(updatedInterviews);
@@ -123,7 +134,7 @@ export default function InterviewPrepPage() {
     setIsLoading(true);
     setActiveInterview(null);
     setMessages([]);
-    
+
     try {
       const { questions } = await generateInterviewQuestions({
         jobRole: values.jobRole,
@@ -139,68 +150,86 @@ export default function InterviewPrepPage() {
         feedback: '',
         createdAt: new Date().toISOString(),
       };
-      
+
       const updatedInterviews = [newInterview, ...interviews];
+      // enable auto-scroll for a new session
+      autoScrollRef.current = true;
       saveInterviews(updatedInterviews, newInterview);
       setCurrentQuestionIndex(0);
-      setMessages([{ role: 'bot', content: newInterview.questions[0].question }]);
 
+      // show the first question and scroll to bottom
+      setMessages([{ role: 'bot', content: newInterview.questions[0].question }]);
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error starting interview' });
     } finally {
       setIsLoading(false);
     }
   };
-  
+
  const handleSelectInterview = (interview: StoredInterview) => {
     setActiveInterview(interview);
 
-    // Reconstruct the chat history
     const reconstructedMessages: ChatMessage[] = [];
     let lastAnsweredIndex = -1;
-    interview.questions.forEach((q, index) => {
-        reconstructedMessages.push({ role: 'bot', content: q.question });
-        if(q.userAnswer) {
-            reconstructedMessages.push({ role: 'user', content: q.userAnswer });
-            lastAnsweredIndex = index;
-        } else if (q.modelAnswer) {
-            reconstructedMessages.push({ role: 'bot', content: q.modelAnswer, isModelAnswer: true });
-            lastAnsweredIndex = index;
-        }
-    })
+
+    if (interview.questions && interview.questions.length > 0) {
+        interview.questions.forEach((q, index) => {
+            if (q.question) reconstructedMessages.push({ role: 'bot', content: q.question });
+            if (q.userAnswer) {
+                reconstructedMessages.push({ role: 'user', content: q.userAnswer });
+                lastAnsweredIndex = index;
+            } else if (q.modelAnswer) {
+                reconstructedMessages.push({ role: 'bot', content: q.modelAnswer, isModelAnswer: true });
+                lastAnsweredIndex = index;
+            }
+        });
+    }
 
     if (interview.feedback) {
         reconstructedMessages.push({ role: 'bot', content: interview.feedback });
     }
-    
+
+    // set messages and set the index to the next unanswered question
     setMessages(reconstructedMessages);
 
-    // Set the current question index to the next one
+    // If the reconstructed list ends up long, we want to auto-scroll to bottom initially,
+    // but if the user scrolls up the autoScrollRef will flip off.
+    autoScrollRef.current = true;
+
     const nextQuestion = (lastAnsweredIndex === -1) ? 0 : Math.min(lastAnsweredIndex + 1, interview.questions.length);
     setCurrentQuestionIndex(nextQuestion);
+
+    // ensure we scroll to bottom once after messages render
+    requestAnimationFrame(() => {
+      const el = messagesViewportRef.current;
+      if (el) {
+        el.scrollTo({ top: el.scrollHeight });
+      }
+    });
   };
-  
+
   const updateActiveInterviewInStorage = (updatedInterview: StoredInterview) => {
     const updatedInterviews = interviews.map(i => i.id === updatedInterview.id ? updatedInterview : i);
     saveInterviews(updatedInterviews, updatedInterview);
   };
-  
 
   const handleNextQuestion = () => {
     if (!activeInterview) return;
 
-    // Persist the user's answer
     const currentQuestion = activeInterview.questions[currentQuestionIndex];
     if (userInput.trim()) {
         const updatedQuestion: InterviewQuestion = { ...currentQuestion, userAnswer: userInput };
         const updatedQuestions = [...activeInterview.questions];
         updatedQuestions[currentQuestionIndex] = updatedQuestion;
         const updatedInterview: StoredInterview = { ...activeInterview, questions: updatedQuestions };
-        
+
         updateActiveInterviewInStorage(updatedInterview);
         setMessages(prev => [...prev, {role: 'user', content: userInput}]);
+
+        // when user submits an answer, we want to auto-scroll so they see the next question
+        autoScrollRef.current = true;
     }
-    
+
     setUserInput('');
     setIsAnswering(false);
 
@@ -209,7 +238,6 @@ export default function InterviewPrepPage() {
       setCurrentQuestionIndex(nextIndex);
       setMessages(prev => [...prev, {role: 'bot', content: activeInterview.questions[nextIndex].question}]);
     } else {
-      // Reached the end
       setCurrentQuestionIndex(activeInterview.questions.length);
     }
   };
@@ -220,17 +248,18 @@ export default function InterviewPrepPage() {
      try {
         const currentQuestion = activeInterview.questions[currentQuestionIndex];
         const result = await getExampleAnswer({ jobRole: activeInterview.jobRole, question: currentQuestion.question });
-        
+
         const updatedQuestion = { ...currentQuestion, modelAnswer: result.exampleAnswer };
         const updatedQuestions = [...activeInterview.questions];
         updatedQuestions[currentQuestionIndex] = updatedQuestion;
         const updatedInterview: StoredInterview = { ...activeInterview, questions: updatedQuestions };
-        
+
         updateActiveInterviewInStorage(updatedInterview);
-        
+
         setMessages(prev => [...prev, {role: 'bot', content: result.exampleAnswer, isModelAnswer: true}]);
 
-        // Automatically move to the next question
+        // after showing model answer, show the next question and auto-scroll
+        autoScrollRef.current = true;
         const nextIndex = currentQuestionIndex + 1;
         if (nextIndex < activeInterview.questions.length) {
             setCurrentQuestionIndex(nextIndex);
@@ -252,7 +281,7 @@ export default function InterviewPrepPage() {
     try {
         const answeredQuestions = activeInterview.questions.filter(q => q.userAnswer);
         if (answeredQuestions.length === 0) {
-            toast({ title: "No answers to review", description: "Answer at least one question to get feedback." });
+            // This case is handled in the JSX now
             return;
         }
 
@@ -263,15 +292,16 @@ export default function InterviewPrepPage() {
 
         const updatedInterview = { ...activeInterview, feedback: result.feedback };
         updateActiveInterviewInStorage(updatedInterview);
-        setMessages(prev => [...prev, { role: 'bot', content: result.feedback}]);
 
+        // append feedback message and auto-scroll to it
+        setMessages(prev => [...prev, { role: 'bot', content: result.feedback }]);
+        autoScrollRef.current = true;
     } catch(e) {
         toast({ variant: 'destructive', title: 'Error getting feedback' });
     } finally {
         setIsGettingFeedback(false);
     }
   };
-
 
   const handleRenameInterview = (id: string) => {
     if (!renameValue) return;
@@ -285,16 +315,35 @@ export default function InterviewPrepPage() {
     const isDeletingActive = activeInterview?.id === id;
     const updated = interviews.filter(i => i.id !== id);
     if (isDeletingActive) {
-        saveInterviews(updated, null);
         setMessages([]);
-        setCurrentQuestionIndex(0);
+        saveInterviews(updated, null);
     } else {
         saveInterviews(updated, activeInterview);
     }
   };
-  
-  const isInterviewOver = activeInterview && currentQuestionIndex >= activeInterview.questions.length;
 
+  const isInterviewOver = activeInterview && currentQuestionIndex >= activeInterview.questions.length;
+  const hasAnswers = activeInterview?.questions.some(q => q.userAnswer);
+
+
+  // Called when user scrolls the messages viewport: update autoScrollRef
+  const handleMessagesScroll = () => {
+    const el = messagesViewportRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const shouldShowButton = distanceFromBottom > AUTO_SCROLL_THRESHOLD_PX;
+    if (shouldShowButton !== showScrollButton) {
+      setShowScrollButton(shouldShowButton);
+    }
+    autoScrollRef.current = distanceFromBottom < AUTO_SCROLL_THRESHOLD_PX;
+  };
+  
+  const handleScrollToBottom = () => {
+    const el = messagesViewportRef.current;
+    if (el) {
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className="grid h-[calc(100vh-5rem)] gap-6 lg:grid-cols-12">
@@ -317,13 +366,13 @@ export default function InterviewPrepPage() {
                 </Form>
             </CardContent>
         </Card>
-        <Card className="flex flex-col flex-1">
+        <Card className="flex flex-col flex-1 min-h-0">
             <CardHeader>
             <CardTitle>Interview History</CardTitle>
             <CardDescription>Review your past sessions.</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 p-2 overflow-y-auto">
-            <ScrollArea className="h-full">
+            <CardContent className="flex-1 p-2 min-h-0">
+              <ScrollArea className="h-full">
                 <ul className='space-y-1 pr-2'>
                     {interviews.map(interview => (
                     <li key={interview.id} className='group'>
@@ -371,12 +420,12 @@ export default function InterviewPrepPage() {
                     </li>
                     ))}
                 </ul>
-            </ScrollArea>
+              </ScrollArea>
             </CardContent>
         </Card>
       </div>
-      
-      <div className="lg:col-span-8">
+
+      <div className="lg:col-span-8 flex flex-col h-full min-h-0">
         {!activeInterview ? (
              <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
                 <Bot className="h-12 w-12 text-muted-foreground" />
@@ -384,16 +433,34 @@ export default function InterviewPrepPage() {
                     Your mock interview will appear here.
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    Start a new session or select a past one to begin.
+                    Start a new session or select a past one to review.
                 </p>
             </div>
         ) : (
-          <Card className="flex flex-col h-full">
+          <Card className="flex flex-col h-full min-h-0">
             <CardHeader>
                 <CardTitle>{activeInterview.name}</CardTitle>
                 <CardDescription>Question {Math.min(currentQuestionIndex + 1, activeInterview.questions.length)} of {activeInterview.questions.length}</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col space-y-6 overflow-y-auto p-6" ref={scrollAreaRef}>
+
+            {/* messages viewport is a fixed scrollable area inside the card */}
+            <CardContent className='flex-1 min-h-0 p-0 relative'>
+              {showScrollButton && (
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="absolute bottom-4 right-4 z-10 rounded-full"
+                        onClick={handleScrollToBottom}
+                    >
+                        <ArrowDown className="h-4 w-4" />
+                    </Button>
+                )}
+              <div
+                ref={messagesViewportRef}
+                onScroll={handleMessagesScroll}
+                className="h-full overflow-auto p-6 space-y-6"
+                aria-live="polite"
+              >
                 {isLoading && <Skeleton className="h-24 w-full" />}
                 {messages.map((message, index) => (
                     <div key={index} className={cn('flex items-start gap-3', message.role === 'user' && 'justify-end')}>
@@ -409,15 +476,24 @@ export default function InterviewPrepPage() {
                     </div>
                 ))}
                 {isGettingFeedback && <Loader2 className="h-6 w-6 animate-spin self-center" />}
-
+              </div>
             </CardContent>
+
             {!activeInterview.feedback && (
                 <CardFooter className='border-t pt-6'>
                     {isInterviewOver ? (
-                         <Button onClick={handleGetFeedback} disabled={isGettingFeedback} className='w-full'>
-                            {isGettingFeedback ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                            Get Feedback
-                         </Button>
+                        <>
+                        {hasAnswers ? (
+                             <Button onClick={handleGetFeedback} disabled={isGettingFeedback} className='w-full'>
+                                {isGettingFeedback ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                Get Feedback
+                             </Button>
+                        ) : (
+                            <p className="w-full text-center text-sm text-muted-foreground">
+                                No answers were provided to give feedback on.
+                            </p>
+                        )}
+                        </>
                     ) : (
                         <div className="w-full space-y-4">
                             <Textarea 
@@ -431,6 +507,7 @@ export default function InterviewPrepPage() {
                                         if (userInput.trim()) handleNextQuestion();
                                     }
                                 }}
+                                className="h-36"
                             />
                             <div className='flex justify-between gap-4'>
                                 <Button variant="ghost" onClick={handleGetModelAnswer} disabled={isAnswering}>
