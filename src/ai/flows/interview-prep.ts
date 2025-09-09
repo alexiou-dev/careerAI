@@ -1,78 +1,111 @@
 'use server';
 
 /**
- * @fileOverview Conversational AI agent for conducting mock interviews.
+ * @fileOverview AI agents for conducting a structured mock interview experience.
  *
- * - conductInterview - A function that handles the interview conversation.
+ * - generateInterviewQuestions: Creates a list of questions for a given role.
+ * - getExampleAnswer: Provides an ideal answer to a specific interview question.
+ * - getInterviewFeedback: Gives feedback on the user's answers at the end of the interview.
  */
 
-import {ai} from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 import {
-  ConductInterviewInputSchema,
-  ConductInterviewOutputSchema,
-  type ConductInterviewInput,
-  type ConductInterviewOutput,
+  GenerateQuestionsInputSchema,
+  GenerateQuestionsOutputSchema,
+  ExampleAnswerInputSchema,
+  ExampleAnswerOutputSchema,
+  InterviewFeedbackInputSchema,
+  InterviewFeedbackOutputSchema,
+  type GenerateQuestionsInput,
+  type GenerateQuestionsOutput,
+  type ExampleAnswerInput,
+  type ExampleAnswerOutput,
+  type InterviewFeedbackInput,
+  type InterviewFeedbackOutput,
 } from '@/types/ai-interview';
 
-export async function conductInterview(
-  input: ConductInterviewInput
-): Promise<ConductInterviewOutput> {
-  return interviewFlow(input);
+/**
+ * Generates a list of tailored interview questions.
+ */
+export async function generateInterviewQuestions(
+  input: GenerateQuestionsInput
+): Promise<GenerateQuestionsOutput> {
+  const prompt = ai.definePrompt({
+    name: 'generateInterviewQuestionsPrompt',
+    input: { schema: GenerateQuestionsInputSchema },
+    output: { schema: GenerateQuestionsOutputSchema },
+    prompt: `You are an expert hiring manager for the role of {{jobRole}}.
+    {{#if jobDescription}}
+    The candidate has provided the following job description for context:
+    ---
+    {{{jobDescription}}}
+    ---
+    {{/if}}
+
+    Your task is to generate a list of 7-10 highly relevant interview questions for this role.
+    The questions should cover a mix of behavioral, technical, and situational topics.
+    Start with a classic opening question like "Tell me about yourself." or "Walk me through your resume."
+    `,
+  });
+
+  const { output } = await prompt(input);
+  return output!;
 }
 
-const prompt = ai.definePrompt({
-  name: 'interviewPrompt',
-  input: {schema: ConductInterviewInputSchema},
-  output: {schema: ConductInterviewOutputSchema},
-  prompt: `You are an expert interviewer conducting a mock interview for the role of {{jobRole}}.
-{{#if jobDescription}}
-The candidate has provided the following job description for context:
----
-{{{jobDescription}}}
----
-{{/if}}
-
-Your task is to conduct a realistic interview by asking one question at a time. The interview should cover a mix of behavioral and technical questions relevant to the specified job role.
-
-**Conversation History:**
-{{#each history}}
-  **{{role}}**: {{{content}}}
-{{/each}}
-
-**Your Instructions:**
-
-1.  **If the history is empty:** Start the interview. Greet the candidate and ask your first question. The first question should be a standard opening question (e.g., "Tell me about yourself" or "Walk me through your resume").
-2.  **If the history is NOT empty:**
-    a.  Analyze the candidate's last answer.
-    b.  Provide brief, constructive feedback on their answer if necessary (e.g., "Good, but could you be more specific about the outcome?"). Keep feedback very concise.
-    c.  Ask the **next** relevant interview question. Do not repeat questions. Maintain a natural conversational flow.
-    d.  Ensure your response is ONLY the feedback (if any) and the next question. Do not add conversational filler like "Great." or "Okay."
-3.  **Question Strategy:**
-    *   Ask a variety of questions (behavioral, technical, situational).
-    *   Tailor questions to the skills and responsibilities expected for a {{jobRole}}.
-    *   If the user's answer is very short or generic, ask a follow-up question to probe for more detail.
-4.  **Ending the Interview:** After 5-7 questions, you can conclude the interview by saying something like "That's all the questions I have for you. Thanks for your time." and set the \`isInterviewOver\` flag to true in your response.
-
-Based on the conversation history, generate your next response.`,
-});
-
-const interviewFlow = ai.defineFlow(
-  {
-    name: 'interviewFlow',
-    inputSchema: ConductInterviewInputSchema,
-    outputSchema: ConductInterviewOutputSchema,
-  },
-  async input => {
-    // If history is empty, add a dummy "assistant" message to kickstart the prompt.
-    // The prompt is designed to react to the *last* message.
-    const history = input.history.length === 0 ? [{ role: 'user', content: 'Hello' }] : input.history;
+/**
+ * Generates an example (ideal) answer for a given interview question.
+ */
+export async function getExampleAnswer(
+  input: ExampleAnswerInput
+): Promise<ExampleAnswerOutput> {
+  const prompt = ai.definePrompt({
+    name: 'getExampleAnswerPrompt',
+    input: { schema: ExampleAnswerInputSchema },
+    output: { schema: ExampleAnswerOutputSchema },
+    prompt: `You are an expert interview coach. A candidate is preparing for an interview for the role of {{jobRole}}.
+    Provide an ideal, well-structured, and concise example answer to the following interview question:
     
-    const llmResponse = await prompt({
-        ...input,
-        history: input.history,
-    });
+    "{{{question}}}"
+
+    The answer should be a single paragraph and get straight to the point, as one would in a real interview. It should follow best practices, such as the STAR method for behavioral questions if applicable.
+    Your response should ONLY be the example answer text. Do not add any conversational filler or introductory phrases like "Here is a good answer:".
+    `,
+  });
+  const { output } = await prompt(input);
+  return output!;
+}
+
+/**
+ * Provides overall feedback on a user's interview performance.
+ */
+export async function getInterviewFeedback(
+  input: InterviewFeedbackInput
+): Promise<InterviewFeedbackOutput> {
+  const prompt = ai.definePrompt({
+    name: 'getInterviewFeedbackPrompt',
+    input: { schema: InterviewFeedbackInputSchema },
+    output: { schema: InterviewFeedbackOutputSchema },
+    prompt: `You are an expert interview coach providing final feedback to a candidate who just completed a mock interview for the role of {{jobRole}}.
     
-    const { output } = llmResponse;
-    return output!;
-  }
-);
+    Here are the questions they were asked and the answers they provided. Some questions may not have an answer if the user skipped them.
+    
+    {{#each userAnswers}}
+      **Question**: {{{question}}}
+      **Answer**: {{{answer}}}
+    {{/each}}
+    
+    **Instructions:**
+    1.  Analyze the user's answers provided above. Do NOT comment on skipped questions.
+    2.  Provide a concise, overall summary of their performance.
+    3.  Give 2-3 specific, actionable pieces of feedback for improvement. Frame these as "Areas for Improvement".
+    4.  Highlight 1-2 things the candidate did well. Frame these as "Strengths".
+    5.  The feedback should be encouraging and constructive.
+    6.  The output MUST be plain text. Do not use markdown. Use single empty lines to separate paragraphs.
+    `,
+  });
+  const { output } = await prompt(input);
+  return output!;
+}
+
+    
