@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef } from 'react';
@@ -37,7 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 
 
-const BulletedTextarea = ({ field }: { field: any }) => {
+const BulletedTextarea = ({ field, ...props }: { field: any }) => {
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const value = e.target.value;
       const lines = value.split('\n');
@@ -50,7 +49,7 @@ const BulletedTextarea = ({ field }: { field: any }) => {
       field.onChange(formattedLines.join('\n'));
     };
   
-    return <Textarea {...field} onChange={handleInputChange} />;
+    return <Textarea {...field} {...props} onChange={handleInputChange} />;
   };
 
 const TagInput = ({ field, label }: { field: any, label: string }) => {
@@ -267,10 +266,10 @@ function GenerateResumeTab() {
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                             <h3 className="text-lg font-semibold">Personal Details</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="Alexiou Ariadni" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="jobTitle" render={({ field }) => (<FormItem><FormLabel>Job Title / Role</FormLabel><FormControl><Input placeholder="Technology Equity Research Associate" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="ariadnialexiou@gmail.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Phone</FormLabel><FormControl><Input placeholder="+306987034058" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="jobTitle" render={({ field }) => (<FormItem><FormLabel>Job Title / Role</FormLabel><FormControl><Input placeholder="Data Analyst" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="example@gmail.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Phone</FormLabel><FormControl><Input placeholder="+301111111111" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Chicago" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="US" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="linkedin" render={({ field }) => (<FormItem><FormLabel>LinkedIn URL</FormLabel><FormControl><Input placeholder="https://linkedin.com/in/..." {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>)} />
@@ -288,14 +287,14 @@ function GenerateResumeTab() {
                                 <div key={item.id} className="space-y-4 p-4 border rounded-md relative">
                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField control={form.control} name={`workExperience.${index}.jobTitle`} render={({ field }) => (<FormItem><FormLabel>Job Title</FormLabel><FormControl><Input placeholder="Junior Data Analyst" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name={`workExperience.${index}.company`} render={({ field }) => (<FormItem><FormLabel>Company</FormLabel><FormControl><Input placeholder="DataTech Solutions" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name={`workExperience.${index}.location`} render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Amsterdam, Netherlands" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name={`workExperience.${index}.company`} render={({ field }) => (<FormItem><FormLabel>Company</FormLabel><FormControl><Input placeholder="Microsoft" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name={`workExperience.${index}.location`} render={({ field }) => (<FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="London, UK" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <div className="grid grid-cols-1 gap-4 md:col-span-2 md:grid-cols-2">
                                             <FormField control={form.control} name={`workExperience.${index}.startDate`} render={({ field }) => <DatePickerField field={field} label="Start Date" />} />
                                             <FormField control={form.control} name={`workExperience.${index}.endDate`} render={({ field }) => <DatePickerField field={field} label="End Date" />} />
                                         </div>
                                     </div>
-                                    <FormField control={form.control} name={`workExperience.${index}.responsibilities`} render={({ field }) => (<FormItem><FormLabel>Responsibilities</FormLabel><FormControl><BulletedTextarea field={field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name={`workExperience.${index}.responsibilities`} render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><BulletedTextarea field={field}  placeholder="• Collaborated with a cross-functional team..." /></FormControl><FormMessage /></FormItem>)} />
                                      <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => removeWork(index)}><Trash2 className="h-4 w-4" /></Button>
                                 </div>
                             ))}
