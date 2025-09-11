@@ -26,9 +26,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function SettingsPage() {
-  const { logout, user } = useAuth();
-  
-  const userEmail = user?.email || '';
+  const { logout, userEmail } = useAuth();
   const [linkedin, setLinkedin] = useState('');
   const [github, setGithub] = useState('');
   const [savedLinkedin, setSavedLinkedin] = useState('');
