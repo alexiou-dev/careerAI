@@ -6,12 +6,12 @@ import { useRouter } from 'next/navigation'
 
 type AuthContextType = {
   user: any | null
-  login: (email: string, password: string) => Promise<void>
-  signup: (email: string, password: string) => Promise<void>
-  logout: () => Promise<void>
-  deleteAccount: () => Promise<void>
-  isLoading: boolean
   userEmail: string | null
+  login: (email: string, password: string) => Promise<string> // return message
+  signup: (email: string, password: string) => Promise<string>
+  logout: () => Promise<void>
+  deleteAccount: () => Promise<string>
+  isLoading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -33,34 +33,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null)
     })
 
-    return () => {
-      listener.subscription.unsubscribe()
-    }
+    return () => listener.subscription.unsubscribe()
   }, [])
 
   const login = async (email: string, password: string) => {
     setIsLoading(true)
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    setIsLoading(false)
-
-    if (error) throw new Error(error.message)
-    setUser(data.user)
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          return 'Invalid email or password.'
+        }
+        return error.message
+      }
+      if (!data.user) return 'No account found with this email.'
+      setUser(data.user)
+      return 'Login successful!'
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const signup = async (email: string, password: string) => {
     setIsLoading(true)
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: `${window.location.origin}/login` },
-    })
-    setIsLoading(false)
-
-    if (error) throw new Error(error.message)
-
-    // Optional auto-login
-    if (data.user) {
-      await login(email, password)
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: `${window.location.origin}/login` },
+      })
+      if (error) {
+        if (error.message.includes('already registered')) {
+          return 'An account with this email already exists.'
+        }
+        return error.message
+      }
+      if (data.user) {
+        // Optional auto-login
+        await login(email, password)
+        return 'Account created! Please check your email to verify.'
+      }
+      return 'Signup successful!'
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -71,24 +86,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const deleteAccount = async () => {
-    if (!user) throw new Error('No user logged in')
-    // Delete user using Supabase admin API
-    // Supabase client does NOT allow deleting users client-side in production.
-    // For demo/testing: sign out user and remove local state
+    if (!user) return 'No user logged in.'
     await logout()
-    console.log(`Account for ${user.email} deleted (placeholder).`)
+    return `Account for ${user.email} deleted (placeholder).`
   }
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        userEmail: user?.email ?? null,
         login,
         signup,
         logout,
         deleteAccount,
         isLoading,
-        userEmail: user?.email ?? null,
       }}
     >
       {!isLoading && children}
