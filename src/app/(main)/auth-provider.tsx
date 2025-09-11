@@ -1,91 +1,103 @@
-'use client';
+'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { createContext, useContext, useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabaseClient'
+import { useRouter } from 'next/navigation'
 
 type AuthContextType = {
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
-  userEmail: string | null;
-};
+  user: any | null
+  login: (email: string, password: string) => Promise<void>
+  signup: (email: string, password: string) => Promise<void>
+  logout: () => Promise<void>
+  deleteAccount: () => Promise<void>
+  isLoading: boolean
+  userEmail: string | null
+}
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<any | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
-  const router = useRouter();
-  const pathname = usePathname();
-
-  // check for session on mount
   useEffect(() => {
-    const token = sessionStorage.getItem('auth-token');
-    const email = sessionStorage.getItem('auth-email');
-    if (token && email) {
-      setIsAuthenticated(true);
-      setUserEmail(email);
+    const initAuth = async () => {
+      const { data } = await supabase.auth.getUser()
+      setUser(data.user ?? null)
+      setIsLoading(false)
     }
-    setIsLoading(false);
-  }, []);
+    initAuth()
 
-  useEffect(() => {
-    if (isLoading) return;
-    const isAuthPage = pathname === '/login';
-    if (!isAuthenticated && !isAuthPage) router.push('/login');
-    else if (isAuthenticated && isAuthPage) router.push('/dashboard');
-  }, [isAuthenticated, isLoading, pathname, router]);
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => {
+      listener.subscription.unsubscribe()
+    }
+  }, [])
 
   const login = async (email: string, password: string) => {
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find((u: any) => u.email === email && u.password === password);
-    if (user) {
-      sessionStorage.setItem('auth-token', 'dummy-token');
-      sessionStorage.setItem('auth-email', email);
-      setIsAuthenticated(true);
-      setUserEmail(email);
-      return true;
-    }
-    return false;
-  };
+    setIsLoading(true)
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    setIsLoading(false)
+
+    if (error) throw new Error(error.message)
+    setUser(data.user)
+  }
 
   const signup = async (email: string, password: string) => {
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const exists = users.some((u: any) => u.email === email);
-    if (exists) return false;
+    setIsLoading(true)
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/login` },
+    })
+    setIsLoading(false)
 
-    users.push({ email, password });
-    localStorage.setItem('users', JSON.stringify(users));
-    sessionStorage.setItem('auth-token', 'dummy-token');
-    sessionStorage.setItem('auth-email', email);
-    setIsAuthenticated(true);
-    setUserEmail(email);
-    return true;
-  };
+    if (error) throw new Error(error.message)
 
-  const logout = () => {
-    sessionStorage.removeItem('auth-token');
-    sessionStorage.removeItem('auth-email');
-    setIsAuthenticated(false);
-    setUserEmail(null);
-    router.push('/login');
-  };
+    // Optional auto-login
+    if (data.user) {
+      await login(email, password)
+    }
+  }
 
-  if (isLoading) return null;
+  const logout = async () => {
+    await supabase.auth.signOut()
+    setUser(null)
+    router.push('/login')
+  }
+
+  const deleteAccount = async () => {
+    if (!user) throw new Error('No user logged in')
+    // Delete user using Supabase admin API
+    // Supabase client does NOT allow deleting users client-side in production.
+    // For demo/testing: sign out user and remove local state
+    await logout()
+    console.log(`Account for ${user.email} deleted (placeholder).`)
+  }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, signup, logout, userEmail }}>
-      {children}
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        signup,
+        logout,
+        deleteAccount,
+        isLoading,
+        userEmail: user?.email ?? null,
+      }}
+    >
+      {!isLoading && children}
     </AuthContext.Provider>
-  );
+  )
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
-  return context;
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (!context) throw new Error('useAuth must be used within AuthProvider')
+  return context
 }
-
