@@ -69,8 +69,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return error.message
       }
       if (data.user) {
-        // Optional auto-login
-        await login(email, password)
         return 'Account created! Please check your email to verify.'
       }
       return 'Signup successful!'
