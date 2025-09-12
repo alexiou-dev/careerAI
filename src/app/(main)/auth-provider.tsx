@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUser(data.user)
-      return { success: true, message: 'Login successful!' }
+      return { success: true, message: ' ' }
     } catch (err: any) {
       return { success: false, message: err.message }
     }
@@ -74,7 +74,7 @@ const signup = async (email: string, password: string) => {
       return { success: false, message: 'Could not create account. Please try again.' }
     }
 
-    return { success: true, message: 'Account created! Please check your email to verify.' }
+    return { success: true, message: 'If this email isn’t already registered, an account has been created. Please check your email to verify.' }
   } catch (err: any) {
     return { success: false, message: err.message }
   }
