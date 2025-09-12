@@ -20,8 +20,7 @@ import { Sparkles, Loader2, Plus, Check, ExternalLink, Upload } from 'lucide-rea
 import { findRelevantJobPostings, JobPosting } from '@/ai/flows/ai-job-finder';
 import { useJobStore } from '@/hooks/use-job-store';
 import { useToast } from '@/hooks/use-toast';
-
-
+import { useAuth } from '@/app/(main)/auth-provider';
 
 const formSchema = z.object({
   jobRole: z.string().optional(),
@@ -41,10 +40,13 @@ const formSchema = z.object({
 type JobFinderFormValues = z.infer<typeof formSchema>;
 
 export default function JobFinderPage() {
+  const { user } = useAuth();
+  const { addJob } = useJobStore(user?.id);
+
+
   const [jobPostings, setJobPostings] = useState<JobPosting[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [addedJobs, setAddedJobs] = useState<Set<string>>(new Set());
-  const { addJob } = useJobStore();
   const { toast } = useToast();
   const [fileName, setFileName] = useState('');
 
