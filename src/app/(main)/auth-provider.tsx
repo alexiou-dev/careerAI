@@ -7,8 +7,8 @@ import { useRouter } from 'next/navigation'
 type AuthContextType = {
   user: any | null
   userEmail: string | null
-  login: (email: string, password: string) => Promise<string> // return message
-  signup: (email: string, password: string) => Promise<string>
+  login: (email: string, password: string) => Promise<{ success: boolean; message: string }>
+  signup: (email: string, password: string) => Promise<{ success: boolean; message: string }>
   logout: () => Promise<void>
   deleteAccount: () => Promise<string>
   isLoading: boolean
@@ -37,45 +37,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true)
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
-          return 'Invalid email or password.'
+          return { success: false, message: 'Invalid email or password.' }
         }
-        return error.message
+        return { success: false, message: error.message }
       }
-      if (!data.user) return 'No account found with this email.'
+
+      if (!data.user) {
+        return { success: false, message: 'No account found with this email.' }
+      }
+
       setUser(data.user)
-      return 'Login successful!'
-    } finally {
-      setIsLoading(false)
+      return { success: true, message: 'Login successful!' }
+    } catch (err: any) {
+      return { success: false, message: err.message }
     }
   }
 
-  const signup = async (email: string, password: string) => {
-    setIsLoading(true)
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: `${window.location.origin}/login` },
-      })
-      if (error) {
-        if (error.message.includes('already registered')) {
-          return 'An account with this email already exists.'
-        }
-        return error.message
+const signup = async (email: string, password: string) => {
+  try {
+    const { data, error } = await supabase.auth.signUp({ email, password })
+
+    if (error) {
+      if (error.code === 'user_already_exists' || error.message.includes('already registered')) {
+        return { success: false, message: 'An account with this email already exists.' }
       }
-      if (data.user) {
-        return 'Account created! Please check your email to verify.'
-      }
-      return 'Signup successful!'
-    } finally {
-      setIsLoading(false)
+      return { success: false, message: error.message }
     }
+
+    // If no error but no user returned, treat as failure
+    if (!data.user) {
+      return { success: false, message: 'Could not create account. Please try again.' }
+    }
+
+    return { success: true, message: 'Account created! Please check your email to verify.' }
+  } catch (err: any) {
+    return { success: false, message: err.message }
   }
+}
+
 
   const logout = async () => {
     await supabase.auth.signOut()
