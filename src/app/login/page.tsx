@@ -1,61 +1,60 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { z } from 'zod'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/app/(main)/auth-provider'
+import { useState } from 'react';
+import { z } from 'zod';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/app/(main)/auth-provider';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import { Bot, LogIn } from 'lucide-react'
+  CardFooter
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Bot, LogIn } from 'lucide-react';
 
 const credentialsSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-})
+  password: z.string().min(6, 'Password must be at least 6 characters')
+});
 
 export default function LoginPage() {
-  const { login, signup } = useAuth()
-  const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isSignUp, setIsSignUp] = useState(false)
-  const [message, setMessage] = useState<{ text: string; success: boolean } | null>(null)
-  const [loading, setLoading] = useState(false)
+  const { login, signup } = useAuth();
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [message, setMessage] = useState<{ text: string; success: boolean } | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setMessage(null)
+    e.preventDefault();
+    setMessage(null);
 
-    const parsed = credentialsSchema.safeParse({ email, password })
+    const parsed = credentialsSchema.safeParse({ email, password });
     if (!parsed.success) {
-      setMessage({ text: parsed.error.errors.map(err => err.message).join(', '), success: false })
-      return
+      setMessage({ text: parsed.error.errors.map(err => err.message).join(', '), success: false });
+      return;
     }
 
-    setLoading(true)
-    let result
+    setLoading(true);
+    let result;
     if (isSignUp) {
-      result = await signup(email, password)
+      result = await signup(email, password);
     } else {
-      result = await login(email, password)
+      result = await login(email, password);
     }
-    setMessage({ text: result.message, success: result.success })
-    setLoading(false)
+
+    setMessage({ text: result.message, success: result.success });
+    setLoading(false);
 
     // Redirect only on successful login
-    if (!isSignUp && result.success) {
-      router.push('/dashboard')
-    }
-  }
+    if (!isSignUp && result.success) router.push('/dashboard');
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
@@ -81,7 +80,7 @@ export default function LoginPage() {
                   type="email"
                   placeholder="m@example.com"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
@@ -90,7 +89,7 @@ export default function LoginPage() {
                 <Input
                   type="password"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
@@ -120,5 +119,5 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
