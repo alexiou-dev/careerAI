@@ -4,7 +4,14 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/(main)/auth-provider'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -21,30 +28,33 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState<{ text: string; success: boolean } | null>(null)
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setMessage('')
+    setMessage(null)
 
     const parsed = credentialsSchema.safeParse({ email, password })
     if (!parsed.success) {
-      setMessage(parsed.error.errors.map(err => err.message).join(', '))
+      setMessage({ text: parsed.error.errors.map(err => err.message).join(', '), success: false })
       return
     }
 
     setLoading(true)
-    let msg: string
+    let result
     if (isSignUp) {
-      msg = await signup(email, password)
+      result = await signup(email, password)
     } else {
-      msg = await login(email, password)
+      result = await login(email, password)
     }
-    setMessage(msg)
+    setMessage({ text: result.message, success: result.success })
     setLoading(false)
 
-    if (msg.includes('successful')) router.push('/dashboard')
+    // Redirect only on successful login
+    if (!isSignUp && result.success) {
+      router.push('/dashboard')
+    }
   }
 
   return (
@@ -84,7 +94,12 @@ export default function LoginPage() {
                   required
                 />
               </div>
-              {message && <p className="text-red-500 text-sm">{message}</p>}
+
+              {message && (
+                <p className={`text-sm ${message.success ? 'text-green-600' : 'text-red-600'}`}>
+                  {message.text}
+                </p>
+              )}
             </CardContent>
 
             <CardFooter className="flex flex-col gap-4">
@@ -107,3 +122,4 @@ export default function LoginPage() {
     </div>
   )
 }
+
