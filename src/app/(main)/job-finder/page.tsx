@@ -16,7 +16,7 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { Sparkles, Loader2, Plus, Check, ExternalLink, Upload } from 'lucide-react';
+import { Sparkles, Loader2, Plus, Check, ExternalLink, Upload, X } from 'lucide-react';
 import { findRelevantJobPostings, JobPosting } from '@/ai/flows/ai-job-finder';
 import { useJobStore } from '@/hooks/use-job-store';
 import { useToast } from '@/hooks/use-toast';
@@ -41,7 +41,7 @@ type JobFinderFormValues = z.infer<typeof formSchema>;
 
 export default function JobFinderPage() {
   const { user } = useAuth();
-  const { addJob } = useJobStore(user?.id);
+  const { addJob, jobs } = useJobStore(user?.id);
 
 
   const [jobPostings, setJobPostings] = useState<JobPosting[]>([]);
@@ -65,28 +65,55 @@ export default function JobFinderPage() {
 
   const fileRef = form.register('resume');
 
-  async function onSubmit(values: JobFinderFormValues) {
-    setIsLoading(true);
-    setJobPostings([]);
-    try {
-      const input = {
-        jobRole: (values.jobRole?.trim() || values.major?.trim() || '') as string,
-        location: values.location?.trim() || undefined,
-        salary: values.salary ? parseInt(values.salary, 10) : undefined,
-        workStyle: values.workStyle,
-        other: values.other?.trim() || undefined,
-        resume: values.resume?.[0] || undefined, 
-      };
-
-      const result = await findRelevantJobPostings(input);
-      setJobPostings(result.jobPostings);
-    } catch (error) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Error finding jobs', description: 'Something went wrong. Please try again.' });
-    } finally {
-      setIsLoading(false);
-    }
+  function normalizeUrl(url?: string) {
+  if (!url) return '';
+  try {
+    const parsed = new URL(url);
+    parsed.search = '';
+    return parsed.toString();
+  } catch {
+    return url;
   }
+}
+
+  async function onSubmit(values: JobFinderFormValues) {
+  setIsLoading(true);
+  setJobPostings([]);
+  try {
+    const input = {
+      jobRole: (values.jobRole?.trim() || values.major?.trim() || '') as string,
+      location: values.location?.trim() || undefined,
+      salary: values.salary ? parseInt(values.salary, 10) : undefined,
+      workStyle: values.workStyle,
+      other: values.other?.trim() || undefined,
+      resume: values.resume?.[0] || undefined, 
+    };
+
+    const result = await findRelevantJobPostings(input);
+
+ 
+    const uniqueByTitle = new Map<string, JobPosting>();
+    for (const p of result.jobPostings) {
+      const titleKey = p.title.trim().toLowerCase(); 
+      if (!uniqueByTitle.has(titleKey)) {
+        uniqueByTitle.set(titleKey, p);
+      }
+    }
+
+    const uniquePostings = Array.from(uniqueByTitle.values()); 
+    setJobPostings(uniquePostings);
+  } catch (error) {
+    console.error(error);
+    toast({ 
+      variant: 'destructive', 
+      title: 'Error finding jobs', 
+      description: 'Something went wrong. Please try again.' 
+    });
+  } finally {
+    setIsLoading(false);
+  }
+}
+
 
   const handleAddJob = (posting: JobPosting) => {
     const atSeparator = ' at ';
@@ -97,6 +124,17 @@ export default function JobFinderPage() {
     addJob({ title, company, url: posting.url });
     setAddedJobs(prev => new Set(prev).add(posting.url));
     toast({ title: 'Job Added', description: `"${posting.title}" has been added to your Job Tracker.` });
+    setJobPostings(prev => prev.filter(p => normalizeUrl(p.url) !== normalizeUrl(posting.url)));
+  };
+  
+  const handleRemoveFile = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    form.setValue('resume', null);
+    setFileName('');
+    const fileInput = document.getElementById('resume-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
   };
 
   return (
@@ -191,7 +229,7 @@ export default function JobFinderPage() {
                   <FormItem>
                     <FormLabel>Upload CV (PDF)</FormLabel>
                      <FormControl>
-                      <div>
+                      <div className="relative">
                         <Input
                           type="file"
                           accept=".pdf"
@@ -210,6 +248,17 @@ export default function JobFinderPage() {
                           <Upload className="h-4 w-4" />
                           <span className='truncate'>{fileName || 'Choose a PDF file'}</span>
                         </label>
+                         {fileName && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1 h-8 w-8"
+                            onClick={handleRemoveFile}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -232,8 +281,8 @@ export default function JobFinderPage() {
         <div>
           <h2 className="text-xl font-semibold mb-4">Found Jobs</h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {jobPostings.map((posting, i) => (
-              <Card key={i} className="flex flex-col">
+            {jobPostings.map((posting) => (
+              <Card key={posting.url} className="flex flex-col">
                 <CardHeader className="flex-grow">
                   <a href={posting.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
                     <CardTitle className="text-lg flex items-center gap-2">
