@@ -4,9 +4,11 @@ import { KanbanBoard } from '@/components/job-tracker/kanban-board';
 import { useJobStore } from '@/hooks/use-job-store';
 import { AddJobDialog } from '@/components/job-tracker/add-job-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/app/(main)/auth-provider';
 
 export default function JobTrackerPage() {
-  const { jobs, addJob, updateJobStatus, deleteJob, isLoaded } = useJobStore();
+  const { user } = useAuth();
+  const { jobs, addJob, updateJobStatus, deleteJob, isLoaded } = useJobStore(user?.id);
 
   return (
     <div className="flex h-full flex-col">
