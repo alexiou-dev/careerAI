@@ -21,7 +21,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import type { Resume } from '@/types';
+import type { SavedResume } from '@/types';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Resume title is required'),
@@ -30,7 +30,7 @@ const formSchema = z.object({
 type RenameResumeFormValues = z.infer<typeof formSchema>;
 
 interface RenameResumeDialogProps {
-  resume: Resume | null;
+  resume: SavedResume | null;
   isOpen: boolean;
   onClose: () => void;
   onRename: (id: string, newTitle: string) => void;
@@ -46,7 +46,7 @@ export function RenameResumeDialog({ resume, isOpen, onClose, onRename }: Rename
 
   useEffect(() => {
     if (resume) {
-      form.reset({ title: resume.title });
+      form.reset({ title: resume.title?? "" });
     }
   }, [resume, form]);
 
