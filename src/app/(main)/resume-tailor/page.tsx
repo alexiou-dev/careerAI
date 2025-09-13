@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
+import { useAuth } from '@/app/(main)/auth-provider';
 
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -56,7 +57,8 @@ export default function ResumeTailorPage() {
   const [fileName, setFileName] = useState('');
   const [hasCopied, setHasCopied] = useState(false);
   const { toast } = useToast();
-  const { addResume } = useResumeStore();
+  const { user } = useAuth(); 
+  const { addResume } = useResumeStore(user?.id);
 
 
   const form = useForm<ResumeTailorFormValues>({
