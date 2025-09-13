@@ -10,23 +10,15 @@ export interface Job {
   createdAt: number;
 }
 
-export interface User {
-  id: string;
+export type UserCredentials = {
   email: string;
-  passwordHash: string; // In a real app, never store plain text passwords
-}
+  password?: string;
+};
 
-export interface Resume {
-    id: string;
-    title: string;
-    content: string;
-    originalResume: string;
-    jobDescription: string;
-    createdAt: number;
-}
 
 export interface SavedResume {
   id: string;
+  title: string;
   name: string;
   tailoredResume: string;
   jobDescription: string;
