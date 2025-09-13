@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db"; // your database client
-import { auth } from "@/lib/auth"; // however you handle auth
+import { db } from "@/lib/db"; 
+import { auth } from "@/lib/auth";
 
 export async function DELETE(req: Request) {
   try {
