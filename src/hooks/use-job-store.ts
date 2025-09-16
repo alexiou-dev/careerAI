@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Job, JobStatus } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
 
 export function useJobStore(userId?: string) {
   const STORE_KEY = `careerai-jobs-${userId || 'guest'}`;
@@ -9,7 +10,7 @@ export function useJobStore(userId?: string) {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    if (!userId) return; // only load for a user
+    if (!userId) return; 
     try {
       const items = window.localStorage.getItem(STORE_KEY);
       if (items) setJobs(JSON.parse(items));
@@ -33,7 +34,7 @@ export function useJobStore(userId?: string) {
   const addJob = useCallback((job: Omit<Job, 'id' | 'createdAt' | 'status'>) => {
     const newJob: Job = {
       ...job,
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       status: 'Applied',
       createdAt: Date.now(),
     };
