@@ -1,10 +1,20 @@
-
 import { z } from 'zod';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_FILE_TYPES = ['application/pdf'];
 
 // === FORMS ===
 export const InterviewPrepFormSchema = z.object({
   jobRole: z.string().min(3, 'Job role must be at least 3 characters.'),
   jobDescription: z.string().optional(),
+  resume: z
+    .any()
+    .optional()
+    .refine((files) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+    .refine(
+      (files) => !files || files.length === 0 || ACCEPTED_FILE_TYPES.includes(files?.[0]?.type),
+      'Only .pdf files are accepted.'
+    ),
 });
 export type InterviewPrepFormValues = z.infer<typeof InterviewPrepFormSchema>;
 
@@ -14,6 +24,9 @@ export type InterviewPrepFormValues = z.infer<typeof InterviewPrepFormSchema>;
 export const GenerateQuestionsInputSchema = z.object({
   jobRole: z.string().describe('The job role the user is practicing for.'),
   jobDescription: z.string().optional().describe('The full job description for context.'),
+  resumePdfDataUri: z.string().optional().describe(
+      "The user's resume in PDF format, as a data URI that must include a MIME type and use Base64 encoding."
+    ),
 });
 export type GenerateQuestionsInput = z.infer<typeof GenerateQuestionsInputSchema>;
 
@@ -26,6 +39,9 @@ export type GenerateQuestionsOutput = z.infer<typeof GenerateQuestionsOutputSche
 export const ExampleAnswerInputSchema = z.object({
   jobRole: z.string().describe('The job role for context.'),
   question: z.string().describe('The specific interview question to answer.'),
+  resumePdfDataUri: z.string().optional().describe(
+    "The user's resume in PDF format, as a data URI that must include a MIME type and use Base64 encoding. If provided, the answer should be based on this resume."
+  ),
 });
 export type ExampleAnswerInput = z.infer<typeof ExampleAnswerInputSchema>;
 
@@ -67,8 +83,10 @@ export const StoredInterviewSchema = z.object({
   name: z.string(),
   jobRole: z.string(),
   jobDescription: z.string().optional(),
+  resumePdfDataUri: z.string().optional(),
   questions: z.array(InterviewQuestionSchema),
   feedback: z.string(),
   createdAt: z.string().datetime(),
 });
 export type StoredInterview = z.infer<typeof StoredInterviewSchema>;
+
