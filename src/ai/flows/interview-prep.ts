@@ -9,7 +9,6 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
 import {
   GenerateQuestionsInputSchema,
   GenerateQuestionsOutputSchema,
@@ -87,6 +86,13 @@ export async function getExampleAnswer(
     ---
     {{/if}}
 
+    {{#if context}}
+    Additional user-provided instructions to consider when generating the answer:
+    ---
+    {{{context}}}
+    ---
+    {{/if}}
+
     The answer should be a single paragraph and get straight to the point, as one would in a real interview. It should follow best practices, such as the STAR method for behavioral questions if applicable.
     Your response should ONLY be the example answer text. Do not add any conversational filler or introductory phrases like "Here is a good answer:".
     `,
@@ -140,6 +146,4 @@ export async function getInterviewFeedback(
         throw error;
     }
 }
-    }
-
     
