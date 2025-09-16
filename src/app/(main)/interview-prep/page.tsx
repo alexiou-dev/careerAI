@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Loader2, Sparkles, User, Trash2, Pencil, Send, ArrowDown } from 'lucide-react';
+import { Bot, Loader2, Sparkles, User, Trash2, Pencil, Send, ArrowDown, Upload, X } from 'lucide-react';
 import {
     generateInterviewQuestions,
     getExampleAnswer,
@@ -59,6 +59,7 @@ import {
     DialogClose,
   } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Label } from '@/components/ui/label';
 
 const INTERVIEW_STORAGE_KEY = 'interview-history';
 
@@ -81,6 +82,9 @@ export default function InterviewPrepPage() {
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const { toast } = useToast();
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [fileName, setFileName] = useState('');
+  const [modelAnswerContext, setModelAnswerContext] = useState('');
+  const [isModelAnswerDialogOpen, setIsModelAnswerDialogOpen] = useState(false);
 
 
   // ref to the messages viewport (the element that actually scrolls)
@@ -130,15 +134,46 @@ export default function InterviewPrepPage() {
     defaultValues: { jobRole: '', jobDescription: '' },
   });
 
+  const fileRef = form.register('resume');
+  
+  const handleRemoveFile = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    form.setValue('resume', null);
+    setFileName('');
+    const fileInput = document.getElementById('resume-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
+  const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        resolve(event.target?.result as string);
+      };
+      reader.onerror = (error) => {
+        reject(error);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleStartInterview = async (values: InterviewPrepFormValues) => {
     setIsLoading(true);
     setActiveInterview(null);
     setMessages([]);
 
     try {
+        let resumePdfDataUri: string | undefined = undefined;
+        if (values.resume && values.resume.length > 0) {
+            resumePdfDataUri = await fileToDataUri(values.resume[0]);
+        }
+
       const { questions } = await generateInterviewQuestions({
         jobRole: values.jobRole,
         jobDescription: values.jobDescription,
+        resumePdfDataUri,
       });
 
       const newInterview: StoredInterview = {
@@ -146,6 +181,7 @@ export default function InterviewPrepPage() {
         name: `${values.jobRole} Interview`,
         jobRole: values.jobRole,
         jobDescription: values.jobDescription,
+        resumePdfDataUri: resumePdfDataUri,
         questions: questions.map(q => ({ question: q, userAnswer: '', modelAnswer: ''})),
         feedback: '',
         createdAt: new Date().toISOString(),
@@ -154,13 +190,24 @@ export default function InterviewPrepPage() {
       const updatedInterviews = [newInterview, ...interviews];
       // enable auto-scroll for a new session
       autoScrollRef.current = true;
-      saveInterviews(updatedInterviews, newInterview);
+      
       setCurrentQuestionIndex(0);
-
-      // show the first question and scroll to bottom
       setMessages([{ role: 'bot', content: newInterview.questions[0].question }]);
+      saveInterviews(updatedInterviews, newInterview);
+      
+      form.reset();
+      setFileName('');
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Error starting interview' });
+        console.error(error);
+        if (error instanceof Error && (error.message.includes('RATE_LIMIT_EXCEEDED'))) {
+            toast({
+                variant: 'destructive',
+                title: 'API Quota Exceeded',
+                description: "You've reached the daily limit for the free tier. Please try again tomorrow.",
+            });
+        } else {
+            toast({ variant: 'destructive', title: 'Error starting interview' });
+        }
     } finally {
       setIsLoading(false);
     }
@@ -170,36 +217,41 @@ export default function InterviewPrepPage() {
     setActiveInterview(interview);
 
     const reconstructedMessages: ChatMessage[] = [];
-    let lastAnsweredIndex = -1;
-
+    let nextQuestionIndex = 0;
+    
     if (interview.questions && interview.questions.length > 0) {
-        interview.questions.forEach((q, index) => {
-            if (q.question) reconstructedMessages.push({ role: 'bot', content: q.question });
-            if (q.userAnswer) {
-                reconstructedMessages.push({ role: 'user', content: q.userAnswer });
-                lastAnsweredIndex = index;
-            } else if (q.modelAnswer) {
-                reconstructedMessages.push({ role: 'bot', content: q.modelAnswer, isModelAnswer: true });
-                lastAnsweredIndex = index;
-            }
-        });
+      for (let i = 0; i < interview.questions.length; i++) {
+        const q = interview.questions[i];
+        
+        reconstructedMessages.push({ role: 'bot', content: q.question });
+        
+        if (q.userAnswer) {
+          reconstructedMessages.push({ role: 'user', content: q.userAnswer });
+          nextQuestionIndex = i + 1;
+        } else if (q.modelAnswer) {
+          reconstructedMessages.push({ role: 'bot', content: q.modelAnswer, isModelAnswer: true });
+          nextQuestionIndex = i + 1;
+        } else {
+          // This is the first unanswered question, so we stop here.
+          break;
+        }
+      }
     }
 
     if (interview.feedback) {
         reconstructedMessages.push({ role: 'bot', content: interview.feedback });
     }
 
-    // set messages and set the index to the next unanswered question
     setMessages(reconstructedMessages);
 
-    // If the reconstructed list ends up long, we want to auto-scroll to bottom initially,
-    // but if the user scrolls up the autoScrollRef will flip off.
+    // If we've answered all questions, index should be length of questions array.
+    if (nextQuestionIndex >= interview.questions.length && interview.questions.every(q => q.userAnswer || q.modelAnswer)) {
+      setCurrentQuestionIndex(interview.questions.length);
+    } else {
+      setCurrentQuestionIndex(nextQuestionIndex);
+    }
+
     autoScrollRef.current = true;
-
-    const nextQuestion = (lastAnsweredIndex === -1) ? 0 : Math.min(lastAnsweredIndex + 1, interview.questions.length);
-    setCurrentQuestionIndex(nextQuestion);
-
-    // ensure we scroll to bottom once after messages render
     requestAnimationFrame(() => {
       const el = messagesViewportRef.current;
       if (el) {
@@ -245,9 +297,14 @@ export default function InterviewPrepPage() {
   const handleGetModelAnswer = async () => {
      if (!activeInterview) return;
      setIsAnswering(true);
+     setIsModelAnswerDialogOpen(false);
      try {
         const currentQuestion = activeInterview.questions[currentQuestionIndex];
-        const result = await getExampleAnswer({ jobRole: activeInterview.jobRole, question: currentQuestion.question });
+        const result = await getExampleAnswer({
+             jobRole: activeInterview.jobRole,
+             question: currentQuestion.question,
+             resumePdfDataUri: activeInterview.resumePdfDataUri,
+        });
 
         const updatedQuestion = { ...currentQuestion, modelAnswer: result.exampleAnswer };
         const updatedQuestions = [...activeInterview.questions];
@@ -257,6 +314,7 @@ export default function InterviewPrepPage() {
         updateActiveInterviewInStorage(updatedInterview);
 
         setMessages(prev => [...prev, {role: 'bot', content: result.exampleAnswer, isModelAnswer: true}]);
+        setModelAnswerContext('');
 
         // after showing model answer, show the next question and auto-scroll
         autoScrollRef.current = true;
@@ -269,7 +327,15 @@ export default function InterviewPrepPage() {
         }
 
      } catch (e) {
-        toast({ variant: 'destructive', title: 'Error getting model answer' });
+        if (e instanceof Error && (e.message.includes('RATE_LIMIT_EXCEEDED'))) {
+            toast({
+                variant: 'destructive',
+                title: 'API Quota Exceeded',
+                description: "You've reached the daily limit for the free tier. Please try again tomorrow.",
+            });
+        } else {
+            toast({ variant: 'destructive', title: 'Error getting model answer' });
+        }
      } finally {
         setIsAnswering(false);
      }
@@ -297,7 +363,15 @@ export default function InterviewPrepPage() {
         setMessages(prev => [...prev, { role: 'bot', content: result.feedback }]);
         autoScrollRef.current = true;
     } catch(e) {
-        toast({ variant: 'destructive', title: 'Error getting feedback' });
+        if (e instanceof Error && (e.message.includes('RATE_LIMIT_EXCEEDED'))) {
+            toast({
+                variant: 'destructive',
+                title: 'API Quota Exceeded',
+                description: "You've reached the daily limit for the free tier. Please try again tomorrow.",
+            });
+        } else {
+            toast({ variant: 'destructive', title: 'Error getting feedback' });
+        }
     } finally {
         setIsGettingFeedback(false);
     }
@@ -312,15 +386,17 @@ export default function InterviewPrepPage() {
   };
 
   const deleteInterview = (id: string) => {
-    const isDeletingActive = activeInterview?.id === id;
-    const updated = interviews.filter(i => i.id !== id);
-    if (isDeletingActive) {
-        setMessages([]);
-        saveInterviews(updated, null);
-    } else {
-        saveInterviews(updated, activeInterview);
-    }
-  };
+  const updated = interviews.filter(i => i.id !== id);
+
+  // Always save the updated list before doing anything else
+  saveInterviews(updated, activeInterview?.id === id ? null : activeInterview);
+
+  if (activeInterview?.id === id) {
+    // Refresh only if the deleted one was active
+    window.location.reload();
+  }
+};
+
 
   const isInterviewOver = activeInterview && currentQuestionIndex >= activeInterview.questions.length;
   const hasAnswers = activeInterview?.questions.some(q => q.userAnswer);
@@ -345,6 +421,13 @@ export default function InterviewPrepPage() {
     }
   };
 
+  useEffect(() => {
+    if (!activeInterview) {
+      setMessages([]);
+      setCurrentQuestionIndex(0);
+    }
+  }, [activeInterview]);
+
   return (
     <div className="grid h-[calc(100vh-5rem)] gap-6 lg:grid-cols-12">
       <div className="lg:col-span-4 flex flex-col gap-6">
@@ -358,6 +441,49 @@ export default function InterviewPrepPage() {
                     <form onSubmit={form.handleSubmit(handleStartInterview)} className="space-y-4">
                         <FormField control={form.control} name="jobRole" render={({ field }) => (<FormItem><FormLabel>Job Role</FormLabel><FormControl><Input placeholder="e.g., Product Manager" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="jobDescription" render={({ field }) => (<FormItem><FormLabel>Job Description (Optional)</FormLabel><FormControl><Textarea placeholder="Paste the job description for more tailored questions." className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField
+                            control={form.control}
+                            name="resume"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Your Resume (PDF, Optional)</FormLabel>
+                                <FormControl>
+                                  <div className="relative">
+                                    <Input
+                                    type="file"
+                                    accept=".pdf"
+                                    className="hidden"
+                                    {...fileRef}
+                                    onChange={(e) => {
+                                        field.onChange(e.target.files);
+                                        setFileName(e.target.files?.[0]?.name || '');
+                                    }}
+                                    id="resume-upload"
+                                    />
+                                    <label
+                                      htmlFor="resume-upload"
+                                      className="flex h-10 w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground ring-offset-background cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                                    >
+                                      <Upload className="h-4 w-4" />
+                                      <span className='truncate'>{fileName || 'Choose a PDF file'}</span>
+                                    </label>
+                                     {fileName && (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute right-1 top-1 h-8 w-8"
+                                        onClick={handleRemoveFile}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
                         <Button type="submit" disabled={isLoading} className="w-full">
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                             Start New Interview
@@ -374,6 +500,9 @@ export default function InterviewPrepPage() {
             <CardContent className="flex-1 p-2 min-h-0">
               <ScrollArea className="h-full">
                 <ul className='space-y-1 pr-2'>
+                    {interviews.length === 0 && (
+                        <li className='text-center text-sm text-muted-foreground py-4'>No past interviews.</li>
+                    )}
                     {interviews.map(interview => (
                     <li key={interview.id} className='group'>
                         <div
@@ -443,7 +572,6 @@ export default function InterviewPrepPage() {
                 <CardDescription>Question {Math.min(currentQuestionIndex + 1, activeInterview.questions.length)} of {activeInterview.questions.length}</CardDescription>
             </CardHeader>
 
-            {/* messages viewport is a fixed scrollable area inside the card */}
             <CardContent className='flex-1 min-h-0 p-0 relative'>
               {showScrollButton && (
                     <Button
@@ -475,7 +603,7 @@ export default function InterviewPrepPage() {
                          {message.role === 'user' && <User className='h-6 w-6 shrink-0' />}
                     </div>
                 ))}
-                {isGettingFeedback && <Loader2 className="h-6 w-6 animate-spin self-center" />}
+                {(isGettingFeedback || isAnswering) && <div className='flex justify-center'><Loader2 className="h-6 w-6 animate-spin" /></div>}
               </div>
             </CardContent>
 
@@ -510,11 +638,42 @@ export default function InterviewPrepPage() {
                                 className="h-36"
                             />
                             <div className='flex justify-between gap-4'>
-                                <Button variant="ghost" onClick={handleGetModelAnswer} disabled={isAnswering}>
-                                  {isAnswering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
-                                  Get Model Answer
-                                </Button>
-                                <Button onClick={handleNextQuestion} disabled={!userInput.trim()}>
+                                 <Dialog open={isModelAnswerDialogOpen} onOpenChange={setIsModelAnswerDialogOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button variant="ghost" disabled={isAnswering}>
+                                            <Bot className="mr-2 h-4 w-4" />
+                                            Get Model Answer
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Customize Model Answer</DialogTitle>
+                                            <DialogDescription>
+                                                Add any notes or context for the AI to consider when generating the answer.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className='space-y-2 py-4'>
+                                          <Label htmlFor='model-answer-context'>Optional Context</Label>
+                                           <Textarea 
+                                             id='model-answer-context'
+                                             placeholder='e.g., "I have no direct experience in this area" or "Focus on my academic projects."'
+                                             value={modelAnswerContext}
+                                             onChange={(e) => setModelAnswerContext(e.target.value)}
+                                             className='min-h-[100px]'
+                                            />
+                                        </div>
+                                        <DialogFooter>
+                                           <DialogClose asChild>
+                                             <Button variant="outline">Cancel</Button>
+                                           </DialogClose>
+                                           <Button onClick={handleGetModelAnswer} disabled={isAnswering}>
+                                            {isAnswering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                             Generate
+                                           </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                                <Button onClick={handleNextQuestion} disabled={!userInput.trim() || isAnswering}>
                                     Submit Answer
                                      <Send className="ml-2 h-4 w-4" />
                                 </Button>
@@ -529,3 +688,4 @@ export default function InterviewPrepPage() {
     </div>
   );
 }
+
