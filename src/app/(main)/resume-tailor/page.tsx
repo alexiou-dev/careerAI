@@ -114,13 +114,32 @@ export default function ResumeTailorPage() {
   }
 
   const handleCopy = () => {
-    if (tailoredResume) {
-      navigator.clipboard.writeText(tailoredResume);
-      setHasCopied(true);
-      toast({ title: "Copied to clipboard!" });
-      setTimeout(() => setHasCopied(false), 2000);
-    }
-  };
+  if (!tailoredResume) return;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(tailoredResume)
+      .then(() => {
+        setHasCopied(true);
+        toast({ title: "Copied to clipboard!" });
+        setTimeout(() => setHasCopied(false), 2000);
+      })
+      .catch((err) => {
+        console.error("Failed to copy text: ", err);
+        toast({
+          variant: "destructive",
+          title: "Copy failed",
+          description: "Unable to copy text to clipboard.",
+        });
+      });
+  } else {
+    toast({
+      variant: "destructive",
+      title: "Clipboard not supported",
+      description: "Your browser does not support the clipboard API.",
+    });
+  }
+};
+
   
   const handleDownloadPdf = () => {
     if (tailoredResume) {
@@ -227,7 +246,10 @@ export default function ResumeTailorPage() {
   const handleSaveResume = () => {
     if (tailoredResume && originalJobDescription) {
       const defaultName = `Resume for "${originalJobDescription.substring(0, 40)}..."`;
-      addResume({ name: defaultName, tailoredResume, jobDescription: originalJobDescription });
+      addResume({
+        name: defaultName, tailoredResume, jobDescription: originalJobDescription,
+        title: ''
+      });
       toast({ title: "Resume saved successfully!" });
     } else {
       toast({
