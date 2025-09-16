@@ -295,39 +295,62 @@ export default function InterviewPrepPage() {
   };
 
   const handleGetModelAnswer = async () => {
-     if (!activeInterview) return;
-     setIsAnswering(true);
-     setIsModelAnswerDialogOpen(false);
-     try {
+    if (!activeInterview) return;
+    setIsAnswering(true);
+    setIsModelAnswerDialogOpen(false);
+
+    try {
         const currentQuestion = activeInterview.questions[currentQuestionIndex];
+
+        // Combine any previously saved context with the current input
+        const accumulatedContext = [
+            activeInterview.modelAnswerContext || '',
+            modelAnswerContext || ''
+        ].filter(Boolean).join(' | '); // join multiple contexts
+
         const result = await getExampleAnswer({
-             jobRole: activeInterview.jobRole,
-             question: currentQuestion.question,
-             resumePdfDataUri: activeInterview.resumePdfDataUri,
+            jobRole: activeInterview.jobRole,
+            question: currentQuestion.question,
+            resumePdfDataUri: activeInterview.resumePdfDataUri,
+            context: accumulatedContext || undefined,
         });
 
         const updatedQuestion = { ...currentQuestion, modelAnswer: result.exampleAnswer };
         const updatedQuestions = [...activeInterview.questions];
         updatedQuestions[currentQuestionIndex] = updatedQuestion;
-        const updatedInterview: StoredInterview = { ...activeInterview, questions: updatedQuestions };
+
+        // Save the accumulated context in the interview state
+        const updatedInterview: StoredInterview = {
+            ...activeInterview,
+            modelAnswerContext: accumulatedContext,
+            questions: updatedQuestions
+        };
 
         updateActiveInterviewInStorage(updatedInterview);
 
-        setMessages(prev => [...prev, {role: 'bot', content: result.exampleAnswer, isModelAnswer: true}]);
+        setMessages(prev => [
+            ...prev,
+            { role: 'bot', content: result.exampleAnswer, isModelAnswer: true }
+        ]);
+
+        // Clear the input field but keep the accumulated context
         setModelAnswerContext('');
 
-        // after showing model answer, show the next question and auto-scroll
+        // Move to the next question and auto-scroll
         autoScrollRef.current = true;
         const nextIndex = currentQuestionIndex + 1;
         if (nextIndex < activeInterview.questions.length) {
             setCurrentQuestionIndex(nextIndex);
-            setMessages(prev => [...prev, {role: 'bot', content: activeInterview.questions[nextIndex].question}]);
+            setMessages(prev => [
+                ...prev,
+                { role: 'bot', content: activeInterview.questions[nextIndex].question }
+            ]);
         } else {
             setCurrentQuestionIndex(activeInterview.questions.length);
         }
 
-     } catch (e) {
-        if (e instanceof Error && (e.message.includes('RATE_LIMIT_EXCEEDED'))) {
+    } catch (e) {
+        if (e instanceof Error && e.message.includes('RATE_LIMIT_EXCEEDED')) {
             toast({
                 variant: 'destructive',
                 title: 'API Quota Exceeded',
@@ -336,10 +359,11 @@ export default function InterviewPrepPage() {
         } else {
             toast({ variant: 'destructive', title: 'Error getting model answer' });
         }
-     } finally {
+    } finally {
         setIsAnswering(false);
-     }
-  };
+    }
+};
+
 
   const handleGetFeedback = async () => {
     if (!activeInterview) return;
