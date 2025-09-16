@@ -42,15 +42,28 @@ export async function generateInterviewQuestions(
     {{{jobDescription}}}
     ---
     {{/if}}
+    {{#if resumePdfDataUri}}
+    The candidate has provided their resume for context. Analyze it to ask specific questions about their experience, skills, or employment history (including any gaps).
+    Resume: {{media url=resumePdfDataUri}}
+    ---
+    {{/if}}
 
     Your task is to generate a list of 7-10 highly relevant interview questions for this role.
     The questions should cover a mix of behavioral, technical, and situational topics.
+    If a resume was provided, include at least 1 question that directly reference the resume content.
     Start with a classic opening question like "Tell me about yourself." or "Walk me through your resume."
     `,
   });
 
-  const { output } = await prompt(input);
-  return output!;
+  try {
+      const {output} = await prompt(input);
+      return output!;
+    } catch (error: any) {
+        if (error.message?.includes('429') || error.message?.includes('quota')) {
+            throw new Error('RATE_LIMIT_EXCEEDED');
+        }
+        throw error;
+    }
 }
 
 /**
@@ -68,12 +81,25 @@ export async function getExampleAnswer(
     
     "{{{question}}}"
 
+    {{#if resumePdfDataUri}}
+    The candidate has provided their resume for context. The example answer MUST be grounded in the experience, skills, and history presented in the resume. Do not invent facts or experiences not present in the document.
+    Resume: {{media url=resumePdfDataUri}}
+    ---
+    {{/if}}
+
     The answer should be a single paragraph and get straight to the point, as one would in a real interview. It should follow best practices, such as the STAR method for behavioral questions if applicable.
     Your response should ONLY be the example answer text. Do not add any conversational filler or introductory phrases like "Here is a good answer:".
     `,
   });
-  const { output } = await prompt(input);
-  return output!;
+  try {
+      const {output} = await prompt(input);
+      return output!;
+    } catch (error: any) {
+        if (error.message?.includes('429') || error.message?.includes('quota')) {
+            throw new Error('RATE_LIMIT_EXCEEDED');
+        }
+        throw error;
+    }
 }
 
 /**
@@ -104,8 +130,16 @@ export async function getInterviewFeedback(
     6.  The output MUST be plain text. Do not use markdown. Use single empty lines to separate paragraphs.
     `,
   });
-  const { output } = await prompt(input);
-  return output!;
+  try {
+      const {output} = await prompt(input);
+      return output!;
+    } catch (error: any) {
+        if (error.message?.includes('429') || error.message?.includes('quota')) {
+            throw new Error('RATE_LIMIT_EXCEEDED');
+        }
+        throw error;
+    }
 }
+    }
 
     
