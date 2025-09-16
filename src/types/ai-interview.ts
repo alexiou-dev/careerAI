@@ -85,6 +85,7 @@ export const StoredInterviewSchema = z.object({
   jobRole: z.string(),
   jobDescription: z.string().optional(),
   resumePdfDataUri: z.string().optional(),
+  modelAnswerContext: z.string().optional(),
   questions: z.array(InterviewQuestionSchema),
   feedback: z.string(),
   createdAt: z.string().datetime(),
