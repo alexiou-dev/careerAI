@@ -206,23 +206,9 @@ export default function SkillAnalyzerPage() {
                                             {gap.skill}
                                         </AccordionTrigger>
                                         <AccordionContent>
-                                            <div className="relative pl-6 pt-4">
-                                                {gap.roadmap.map((step, stepIndex) => (
-                                                    <div key={stepIndex} className="flex gap-4">
-                                                        <div className="absolute left-0 flex flex-col items-center">
-                                                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                                                                {stepIndex + 1}
-                                                            </div>
-                                                            {stepIndex < gap.roadmap.length - 1 && (
-                                                                <div className="h-full w-px bg-border my-1"></div>
-                                                            )}
-                                                        </div>
-                                                        <div className="pb-6">
-                                                            <p className="font-medium text-foreground">{step}</p>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                            <pre className="whitespace-pre-wrap font-sans text-sm p-4 bg-muted/50 rounded-md">
+                                                {gap.roadmap.join('\n\n')}
+                                            </pre>
                                         </AccordionContent>
                                     </AccordionItem>
                                 ))}
@@ -244,3 +230,4 @@ export default function SkillAnalyzerPage() {
     </div>
   );
 }
+
