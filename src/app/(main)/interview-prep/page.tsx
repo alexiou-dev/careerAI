@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Loader2, Sparkles, User, Trash2, Pencil, Send, ArrowDown, Upload, X } from 'lucide-react';
+import { Bot, Loader2, Sparkles, User, Trash2, Pencil, Send, ArrowDown, Upload, X, Mic, MicOff } from 'lucide-react';
 import {
     generateInterviewQuestions,
     getExampleAnswer,
@@ -85,6 +85,9 @@ export default function InterviewPrepPage() {
   const [fileName, setFileName] = useState('');
   const [modelAnswerContext, setModelAnswerContext] = useState('');
   const [isModelAnswerDialogOpen, setIsModelAnswerDialogOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  
+  const recognitionRef = useRef<any>(null);
 
 
   // ref to the messages viewport (the element that actually scrolls)
@@ -93,6 +96,35 @@ export default function InterviewPrepPage() {
   // when true => allow auto-scrolling to bottom; when false => user is reviewing older messages
   const autoScrollRef = useRef<boolean>(true);
   const AUTO_SCROLL_THRESHOLD_PX = 150; // within this px from bottom we consider "at bottom"
+  
+  useEffect(() => {
+    // SpeechRecognition setup
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+
+        recognitionRef.current.onresult = (event: any) => {
+            let interimTranscript = '';
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            setUserInput(prev => prev + finalTranscript + interimTranscript);
+        };
+        
+        recognitionRef.current.onerror = (event: any) => {
+            console.error("Speech recognition error", event.error);
+            toast({ variant: 'destructive', title: 'Speech Recognition Error', description: event.error });
+            setIsRecording(false);
+        };
+    }
+  }, [toast]);
 
   useEffect(() => {
     try {
@@ -185,6 +217,7 @@ export default function InterviewPrepPage() {
         questions: questions.map(q => ({ question: q, userAnswer: '', modelAnswer: ''})),
         feedback: '',
         createdAt: new Date().toISOString(),
+        modelAnswerContext: '',
       };
 
       const updatedInterviews = [newInterview, ...interviews];
@@ -264,9 +297,29 @@ export default function InterviewPrepPage() {
     const updatedInterviews = interviews.map(i => i.id === updatedInterview.id ? updatedInterview : i);
     saveInterviews(updatedInterviews, updatedInterview);
   };
+  
+    const handleToggleRecording = () => {
+    if (!recognitionRef.current) {
+        toast({variant: 'destructive', title: 'Unsupported Browser', description: "Speech recognition is not supported in your browser."})
+        return;
+    };
+    if (isRecording) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    } else {
+      recognitionRef.current.start();
+      setIsRecording(true);
+    }
+  };
+
 
   const handleNextQuestion = () => {
     if (!activeInterview) return;
+    
+    if (isRecording) {
+        recognitionRef.current.stop();
+        setIsRecording(false);
+    }
 
     const currentQuestion = activeInterview.questions[currentQuestionIndex];
     if (userInput.trim()) {
@@ -298,28 +351,25 @@ export default function InterviewPrepPage() {
     if (!activeInterview) return;
     setIsAnswering(true);
     setIsModelAnswerDialogOpen(false);
-
     try {
         const currentQuestion = activeInterview.questions[currentQuestionIndex];
 
-        // Combine any previously saved context with the current input
         const accumulatedContext = [
             activeInterview.modelAnswerContext || '',
             modelAnswerContext || ''
-        ].filter(Boolean).join(' | '); // join multiple contexts
+        ].filter(Boolean).join(' | ');
 
         const result = await getExampleAnswer({
-            jobRole: activeInterview.jobRole,
-            question: currentQuestion.question,
-            resumePdfDataUri: activeInterview.resumePdfDataUri,
-            context: accumulatedContext || undefined,
+             jobRole: activeInterview.jobRole,
+             question: currentQuestion.question,
+             resumePdfDataUri: activeInterview.resumePdfDataUri,
+             userContext: accumulatedContext || undefined,
         });
 
         const updatedQuestion = { ...currentQuestion, modelAnswer: result.exampleAnswer };
         const updatedQuestions = [...activeInterview.questions];
         updatedQuestions[currentQuestionIndex] = updatedQuestion;
-
-        // Save the accumulated context in the interview state
+        
         const updatedInterview: StoredInterview = {
             ...activeInterview,
             modelAnswerContext: accumulatedContext,
@@ -328,29 +378,21 @@ export default function InterviewPrepPage() {
 
         updateActiveInterviewInStorage(updatedInterview);
 
-        setMessages(prev => [
-            ...prev,
-            { role: 'bot', content: result.exampleAnswer, isModelAnswer: true }
-        ]);
-
-        // Clear the input field but keep the accumulated context
+        setMessages(prev => [...prev, {role: 'bot', content: result.exampleAnswer, isModelAnswer: true}]);
         setModelAnswerContext('');
 
-        // Move to the next question and auto-scroll
+        // after showing model answer, show the next question and auto-scroll
         autoScrollRef.current = true;
         const nextIndex = currentQuestionIndex + 1;
         if (nextIndex < activeInterview.questions.length) {
             setCurrentQuestionIndex(nextIndex);
-            setMessages(prev => [
-                ...prev,
-                { role: 'bot', content: activeInterview.questions[nextIndex].question }
-            ]);
+            setMessages(prev => [...prev, {role: 'bot', content: activeInterview.questions[nextIndex].question}]);
         } else {
             setCurrentQuestionIndex(activeInterview.questions.length);
         }
 
-    } catch (e) {
-        if (e instanceof Error && e.message.includes('RATE_LIMIT_EXCEEDED')) {
+     } catch (e) {
+        if (e instanceof Error && (e.message.includes('RATE_LIMIT_EXCEEDED'))) {
             toast({
                 variant: 'destructive',
                 title: 'API Quota Exceeded',
@@ -359,11 +401,10 @@ export default function InterviewPrepPage() {
         } else {
             toast({ variant: 'destructive', title: 'Error getting model answer' });
         }
-    } finally {
+     } finally {
         setIsAnswering(false);
-    }
-};
-
+     }
+  };
 
   const handleGetFeedback = async () => {
     if (!activeInterview) return;
@@ -451,9 +492,18 @@ export default function InterviewPrepPage() {
       setCurrentQuestionIndex(0);
     }
   }, [activeInterview]);
+  
+  // Make sure to stop recording if the component unmounts or active interview changes
+    useEffect(() => {
+        return () => {
+            if (recognitionRef.current && isRecording) {
+                recognitionRef.current.stop();
+            }
+        };
+    }, [isRecording]);
 
   return (
-    <div className="grid h-[calc(100vh-5rem)] gap-6 lg:grid-cols-12">
+    <div className="grid h-[calc(100vh-8rem)] gap-6 lg:grid-cols-12">
       <div className="lg:col-span-4 flex flex-col gap-6">
         <Card>
             <CardHeader>
@@ -648,19 +698,31 @@ export default function InterviewPrepPage() {
                         </>
                     ) : (
                         <div className="w-full space-y-4">
-                            <Textarea 
-                                placeholder="Type your answer here..."
-                                value={userInput}
-                                onChange={(e) => setUserInput(e.target.value)}
-                                disabled={isAnswering}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        if (userInput.trim()) handleNextQuestion();
-                                    }
-                                }}
-                                className="h-36"
-                            />
+                            <div className="relative">
+                                <Textarea 
+                                    placeholder={isRecording ? 'Recording your answer...' : 'Type or record your answer here...'}
+                                    value={userInput}
+                                    onChange={(e) => setUserInput(e.target.value)}
+                                    disabled={isAnswering}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            if (userInput.trim()) handleNextQuestion();
+                                        }
+                                    }}
+                                    className="h-36 pr-12"
+                                />
+                                <Button
+                                    type="button"
+                                    variant={isRecording ? "destructive" : "outline"}
+                                    size="icon"
+                                    className="absolute right-2 top-2 h-8 w-8"
+                                    onClick={handleToggleRecording}
+                                    disabled={isAnswering}
+                                >
+                                    {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                                </Button>
+                            </div>
                             <div className='flex justify-between gap-4'>
                                  <Dialog open={isModelAnswerDialogOpen} onOpenChange={setIsModelAnswerDialogOpen}>
                                     <DialogTrigger asChild>
@@ -713,3 +775,4 @@ export default function InterviewPrepPage() {
   );
 }
 
+    
