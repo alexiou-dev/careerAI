@@ -134,6 +134,8 @@ export async function getInterviewFeedback(
     4.  Highlight 1-2 things the candidate did well. Frame these as "Strengths".
     5.  The feedback should be encouraging and constructive.
     6.  The output MUST be plain text. Do not use markdown. Use single empty lines to separate paragraphs.
+    5.  If recording: Also provide feedback on their delivery. Comment on pacing, clarity, and the potential use of filler words (e.g., "um", "ah", "like"). Provide suggestions for speaking more confidently and clearly. Frame this as "Delivery Feedback".
+    6.  The feedback should be encouraging and constructive.
     `,
   });
   try {
@@ -146,4 +148,4 @@ export async function getInterviewFeedback(
         throw error;
     }
 }
-     
+       
