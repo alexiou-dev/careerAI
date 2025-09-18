@@ -44,6 +44,21 @@ const fileToDataUri = (file: File): Promise<string> =>
     reader.readAsDataURL(file);
   });
 
+const RoadmapContent = ({ content }: { content: string }) => {
+  const lines = content.split('\n');
+  return (
+    <div className="whitespace-pre-wrap font-sans text-sm p-4 bg-muted/50 rounded-md">
+      {lines.map((line, index) => {
+        if (line.startsWith('🌟')) {
+          return <strong key={index} className="block font-semibold text-foreground">{line}</strong>;
+        }
+        return <div key={index}>{line || '\u00A0'}</div>; // Use non-breaking space for empty lines to preserve them
+      })}
+    </div>
+  );
+};
+
+
 export default function SkillAnalyzerPage() {
   const [analysisResult, setAnalysisResult] = useState<SkillAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -206,9 +221,7 @@ export default function SkillAnalyzerPage() {
                                             {gap.skill}
                                         </AccordionTrigger>
                                         <AccordionContent>
-                                            <pre className="whitespace-pre-wrap font-sans text-sm p-4 bg-muted/50 rounded-md">
-                                                {gap.roadmap.join('\n\n')}
-                                            </pre>
+                                            <RoadmapContent content={gap.roadmap.join('\n')} />
                                         </AccordionContent>
                                     </AccordionItem>
                                 ))}
