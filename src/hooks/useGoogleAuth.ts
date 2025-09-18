@@ -1,60 +1,27 @@
-"use client";
-import { useEffect } from "react";
-import { gapi } from "gapi-script";
+// useCalendar.ts
+export function useCalendar() {
+  const createCalendarLink = (jobTitle: string, reminderDate: number) => {
+    const start = new Date(reminderDate).toISOString().replace(/-|:|\.\d+/g, '');
+    const end = new Date(reminderDate + 60 * 60 * 1000).toISOString().replace(/-|:|\.\d+/g, ''); // +1h
 
-const CLIENT_ID = "YOUR_CLIENT_ID.apps.googleusercontent.com";
-const API_KEY = "YOUR_API_KEY";
-const SCOPES = "https://www.googleapis.com/auth/calendar.events";
+    const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+      `Interview: ${jobTitle}`
+    )}&dates=${start}/${end}&details=${encodeURIComponent(
+      'Reminder from CareerAI'
+    )}&ctz=Europe/Athens`;
 
-export function useGoogleAuth() {
-  useEffect(() => {
-    function initClient() {
-      gapi.client.init({
-        apiKey: API_KEY,
-        clientId: CLIENT_ID,
-        discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"],
-        scope: SCOPES,
-      });
-    }
+    return gcalUrl;
+  };
 
-    gapi.load("client:auth2", initClient);
-  }, []);
-
-  const signIn = () => gapi.auth2.getAuthInstance().signIn();
-  const signOut = () => gapi.auth2.getAuthInstance().signOut();
-
-  const createEvent = async (jobTitle: string, reminderDate: number) => {
-    const event = {
-      summary: `Interview Reminder: ${jobTitle}`,
-      description: "Reminder set from CareerAI",
-      start: {
-        dateTime: new Date(reminderDate).toISOString(),
-        timeZone: "Europe/Athens", // adjust
-      },
-      end: {
-        dateTime: new Date(reminderDate + 60 * 60 * 1000).toISOString(), // +1h
-        timeZone: "Europe/Athens",
-      },
-      reminders: {
-        useDefault: false,
-        overrides: [
-          { method: "email", minutes: 24 * 60 }, // 1 day before
-          { method: "popup", minutes: 10 }, // 10 min before
-        ],
-      },
-    };
-
-    try {
-      const response = await gapi.client.calendar.events.insert({
-        calendarId: "primary",
-        resource: event,
-      });
-      console.log("Event created:", response);
-      return response;
-    } catch (err) {
-      console.error("Error creating event", err);
+  const setLocalReminder = (jobTitle: string, reminderDate: number) => {
+    const now = new Date().getTime();
+    const delay = reminderDate - now;
+    if (delay > 0) {
+      setTimeout(() => {
+        alert(`Reminder: ${jobTitle} interview today!`);
+      }, delay);
     }
   };
 
-  return { signIn, signOut, createEvent };
+  return { createCalendarLink, setLocalReminder };
 }
