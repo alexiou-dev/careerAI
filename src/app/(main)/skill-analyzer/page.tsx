@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -22,33 +21,31 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Sparkles, Loader2, Upload, Lightbulb } from 'lucide-react';
-import { analyzeSkills, type SkillAnalysis } from '@/ai/flows/analyze-skills';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import { Sparkles, Loader2, Upload, Lightbulb, CheckCircle, X } from 'lucide-react';
+import { analyzeJobSkills } from '@/ai/flows/analyze-skills';
 import { useToast } from '@/hooks/use-toast';
 import {
-    SkillAnalyzerFormSchema,
-    type SkillAnalyzerFormValues,
+  SkillAnalyzerFormSchema,
+  type SkillAnalyzerFormValues,
+  type SkillAnalysis,
 } from '@/types/ai-skills';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ClickableRecommendation } from '@/components/ui/clickable-recommendation';
 
-
-const fileToDataUri = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-        resolve(event.target?.result as string);
-        };
-        reader.onerror = (error) => {
-        reject(error);
-        };
-        reader.readAsDataURL(file);
-    });
-};
-
+const fileToDataUri = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => resolve(event.target?.result as string);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
 
 export default function SkillAnalyzerPage() {
-  const [analysisResult, setAnalysisResult] = useState<SkillAnalysis[] | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<SkillAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState('');
   const { toast } = useToast();
@@ -62,15 +59,18 @@ export default function SkillAnalyzerPage() {
   async function onSubmit(values: SkillAnalyzerFormValues) {
     setIsLoading(true);
     setAnalysisResult(null);
+
     try {
       const file = values.resume[0];
       const resumePdfDataUri = await fileToDataUri(file);
-      const result = await analyzeSkills({
+
+      const result = await analyzeJobSkills({
         resumePdfDataUri,
         jobDescription: values.jobDescription,
       });
-      setAnalysisResult(result.analysis);
-    } catch (error) {
+      setAnalysisResult(result);
+
+    } catch (error: any) {
       console.error(error);
       toast({
         variant: 'destructive',
@@ -81,126 +81,166 @@ export default function SkillAnalyzerPage() {
       setIsLoading(false);
     }
   }
+  
+    const handleRemoveFile = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    form.setValue('resume', null);
+    setFileName('');
+    const fileInput = document.getElementById('resume-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
-      <Card>
+       <Card>
         <CardHeader>
           <CardTitle>Skill Gap Analyzer</CardTitle>
           <CardDescription>
-            Analyze a job description against your resume to find skill gaps.
+            Upload your resume and paste a job description to identify the key skills you should focus on to land the role.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="resume"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Your Resume (PDF)</FormLabel>
-                    <FormControl>
-                      <div>
-                        <Input
-                          type="file"
-                          accept=".pdf"
-                          className="hidden"
-                          {...fileRef}
-                          onChange={(e) => {
-                            field.onChange(e.target.files);
-                            setFileName(e.target.files?.[0]?.name || '');
-                          }}
-                          id="resume-upload"
+                <FormField
+                    control={form.control}
+                    name="resume"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Your Resume (PDF)</FormLabel>
+                        <FormControl>
+                        <div className="relative">
+                           <Input
+                                type="file"
+                                accept=".pdf"
+                                className="hidden"
+                                {...fileRef}
+                                onChange={(e) => {
+                                    field.onChange(e.target.files);
+                                    setFileName(e.target.files?.[0]?.name || '');
+                                }}
+                                id="resume-upload"
+                            />
+                            <label
+                                htmlFor="resume-upload"
+                                className="flex h-10 w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground ring-offset-background cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                            >
+                                <Upload className="h-4 w-4" />
+                                <span className="truncate">{fileName || 'Choose a PDF file'}</span>
+                            </label>
+                            {fileName && (
+                                <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1 h-8 w-8"
+                                onClick={handleRemoveFile}
+                                >
+                                <X className="h-4 w-4" />
+                                </Button>
+                            )}
+                        </div>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="jobDescription"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Job Description</FormLabel>
+                        <FormControl>
+                        <Textarea
+                            placeholder="Paste the full job description here..."
+                            className="min-h-[150px] md:min-h-[200px]"
+                            {...field}
                         />
-                         <label
-                          htmlFor="resume-upload"
-                          className="flex h-10 w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground ring-offset-background cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                        >
-                          <Upload className="h-4 w-4" />
-                          <span className='truncate'>{fileName || 'Choose a PDF file'}</span>
-                        </label>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="jobDescription"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Job Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Paste the full job description here..."
-                        className="min-h-[200px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
               <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="mr-2 h-4 w-4" />
-                )}
-                Analyze Skills
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                Analyze Skill Gaps
               </Button>
             </form>
           </Form>
         </CardContent>
       </Card>
-      <Card className="flex flex-col">
-        <CardHeader>
-            <CardTitle>Analysis Result</CardTitle>
-            <CardDescription>
-              Missing skills and learning suggestions will appear here.
-            </CardDescription>
-        </CardHeader>
-        <CardContent className="flex-1 flex flex-col space-y-4">
-          {isLoading && (
-            <div className='space-y-4'>
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
-            </div>
-          )}
-          {analysisResult && analysisResult.length > 0 && (
-            <ul className='space-y-4'>
-                {analysisResult.map((item, index) => (
-                    <li key={index} className='p-4 rounded-md border bg-muted/50'>
-                        <p className='font-semibold text-primary'>{item.skill}</p>
-                        <ClickableRecommendation text={item.recommendation} />
-                    </li>
-                ))}
-            </ul>
-          )}
-           {analysisResult && analysisResult.length === 0 && !isLoading && (
-              <div className="flex flex-1 flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
-                <Lightbulb className="h-10 w-10 text-muted-foreground" />
-                <p className="mt-4 text-sm font-medium text-muted-foreground">
-                    No significant skill gaps found!
-                </p>
-                 <p className="mt-2 text-sm text-muted-foreground">
-                    Your resume seems to be a great match for this role.
-                </p>
-              </div>
-           )}
-          {!isLoading && !analysisResult && (
-            <div className="flex flex-1 flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
-              <Lightbulb className="h-10 w-10 text-muted-foreground" />
-              <p className="mt-4 text-sm text-muted-foreground">
-                Your analysis will be shown here once generated.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      
+        <div className="flex flex-col">
+            {isLoading && (
+                <Card className="flex h-full flex-col items-center justify-center">
+                    <CardContent className="flex flex-col items-center justify-center gap-4 pt-6">
+                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                        <p className="text-muted-foreground">Analyzing your skills...</p>
+                    </CardContent>
+                </Card>
+            )}
+
+            {!isLoading && analysisResult && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Your Personalized Learning Plan</CardTitle>
+                        <CardDescription>Based on our analysis, here are the key areas to focus on, along with a suggested roadmap to get you job-ready.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {analysisResult.message && (
+                            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-green-500/50 bg-green-500/10 p-8 text-center">
+                                <CheckCircle className="h-12 w-12 text-green-500" />
+                                <p className="mt-4 text-base font-medium text-foreground">
+                                    {analysisResult.message}
+                                </p>
+                            </div>
+                        )}
+                        {analysisResult.skillGaps && analysisResult.skillGaps.length > 0 && (
+                             <Accordion type="single" collapsible className="w-full">
+                                {analysisResult.skillGaps.map((gap, index) => (
+                                     <AccordionItem value={`item-${index}`} key={index}>
+                                        <AccordionTrigger className='text-lg font-semibold text-primary hover:no-underline'>
+                                            {gap.skill}
+                                        </AccordionTrigger>
+                                        <AccordionContent>
+                                            <div className="relative pl-6 pt-4">
+                                                {gap.roadmap.map((step, stepIndex) => (
+                                                    <div key={stepIndex} className="flex gap-4">
+                                                        <div className="absolute left-0 flex flex-col items-center">
+                                                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                                                                {stepIndex + 1}
+                                                            </div>
+                                                            {stepIndex < gap.roadmap.length - 1 && (
+                                                                <div className="h-full w-px bg-border my-1"></div>
+                                                            )}
+                                                        </div>
+                                                        <div className="pb-6">
+                                                            <p className="font-medium text-foreground">{step}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                ))}
+                            </Accordion>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
+
+            {!isLoading && !analysisResult && (
+                <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
+                    <Lightbulb className="h-12 w-12 text-muted-foreground" />
+                    <p className="mt-4 text-lg font-medium text-muted-foreground">
+                        Your personalized learning plan will appear here.
+                    </p>
+                </div>
+            )}
+        </div>
     </div>
   );
 }
