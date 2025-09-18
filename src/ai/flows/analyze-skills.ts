@@ -15,34 +15,55 @@ import {
 } from '@/types/ai-skills';
 import {z} from 'zod';
 
-const analysisPrompt = ai.definePrompt({
+export const analysisPrompt = ai.definePrompt({
   name: 'skillGapAnalysisPrompt',
-  input: {schema: AnalyzeSkillsInputSchema},
-  output: {schema: AnalyzeSkillsOutputSchema},
-  prompt: `You are an expert career development coach and curriculum designer. Your task is to analyze a user's resume against a job description, identify critical skill gaps, and generate a step-by-step learning roadmap for each gap.
+  input: { schema: AnalyzeSkillsInputSchema },
+  output: { schema: AnalyzeSkillsOutputSchema },
+  prompt: `
+You are an expert career coach and curriculum designer. Analyze the user's resume against a job description, identify missing skills, and create a multi-stage learning roadmap for each missing skill.
 
-**Context:**
-- User's Resume PDF: {{media url=resumePdfDataUri}}
+Context:
+- Resume PDF (data URI): {{media url=resumePdfDataUri}}
 - Job Description: {{{jobDescription}}}
 
-**Instructions:**
-1.  **Extract Skills**: Identify the key technical skills, tools, and programming languages from both the resume and the job description.
-2.  **Identify the Gap**: Compare the two lists and identify up to 3-4 of the most important skills that are present in the job description but are missing or underrepresented in the resume.
-3.  **Handle No Gaps**: If no significant skill gaps are found, or if the resume is a very strong match for the job description, set the 'message' field in your output to a positive confirmation like "Great news! Your resume is a strong match for this role. No significant skill gaps were found." and leave the 'skillGaps' array empty.
-4.  **Generate Learning Roadmaps**: For each identified skill gap, create a concise, actionable learning roadmap with 3-5 steps. The roadmap should be a logical progression from foundational concepts to more advanced application.
-    - Example for "React":
-        1. Master JavaScript fundamentals (ES6+), including concepts like closures, promises, and async/await.
-        2. Learn React basics: components, props, state, and the component lifecycle.
-        3. Build small projects using hooks like useState, useEffect, and useContext.
-        4. Explore advanced state management with Redux or Zustand.
-        5. Understand routing with React Router and deploying a React application.
-5.  **Format the Output**: Return a JSON object containing:
-    - \`skillGaps\`: An array where each object has:
-        - \`skill\`: The name of the missing skill.
-        - \`roadmap\`: An array of strings, where each string is a step in the learning plan.
-    - \`message\`: An optional string for when no gaps are found.
+Instructions:
+1. Extract all key technical and soft skills from the job description.
+2. Compare with the user's resume and identify up to 3-5 most important missing skills.
+3. For each missing skill, generate a step-by-step multi-stage roadmap inspired by this structure:
 
-Generate the analysis based on these instructions. Do not recommend specific websites, courses, or external links. Focus on the concepts and steps to learn.`,
+🌟 STAGE 1: FOUNDATIONS (Beginner Level)
+Goal: Brief goal for foundational understanding
+📘Topics: List of 4-6 key topics
+🛠 Resources: List of books, courses, or tools (conceptual only; do not give direct URLs)
+✅ Assignments: 2-3 practical exercises
+
+🌟 STAGE 2: CORE PRINCIPLES (Intermediate Level)
+Goal: Brief goal for intermediate mastery
+📘Topics: 4-6 intermediate topics
+🛠 Resources: Conceptual references
+✅ Assignments: 2-3 exercises or mini-projects
+
+🌟 STAGE 3: ADVANCED APPLICATION (Advanced Level)
+Goal: Goal for advanced mastery
+📘Topics: 4-6 advanced topics
+🛠 Resources: Conceptual references
+✅ Assignments: 2-3 exercises or projects
+
+🌟 STAGE 4: RESEARCH & APPLICATION (Optional)
+Goal: Optional projects, contributions, or experiments
+🧠 Ideas: Suggestions for applying skills
+🧪 Tools to Learn: Relevant software, frameworks, or languages
+Suggested Timeline: Flexible duration for each stage
+
+4. If the resume already covers the skill well, return a positive confirmation in "message" like: "Your resume is a strong match for this skill. No further learning needed."
+5. Format output as JSON:
+- skillGaps: array of objects
+  - skill: string
+  - roadmap: array of strings, each string contains one stage formatted as above
+- message: optional string if no gaps
+
+Do not include external links, URLs, or company-specific resources. Focus on concepts and steps to learn.
+`
 });
 
 export async function analyzeJobSkills(
