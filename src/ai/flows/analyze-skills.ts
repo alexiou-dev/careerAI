@@ -31,25 +31,25 @@ Instructions:
 2. Compare with the user's resume and identify up to 3-5 most important missing skills.
 3. For each missing skill, generate a step-by-step multi-stage roadmap inspired by this structure:
 
-🌟 STAGE 1: FOUNDATIONS (Beginner Level)
+🌟 STAGE 1: FOUNDATIONS (Beginner Level) 
 Goal: Brief goal for foundational understanding
 📘Topics: List of 4-6 key topics
-🛠 Resources: List of books, courses, or tools (conceptual only; do not give direct URLs)
+🛠 Resources: Suggest specific books, course names, or software tools 
 ✅ Assignments: 2-3 practical exercises
 
-🌟 STAGE 2: CORE PRINCIPLES (Intermediate Level)
+🌟 STAGE 2: CORE PRINCIPLES (Intermediate Level) 
 Goal: Brief goal for intermediate mastery
 📘Topics: 4-6 intermediate topics
-🛠 Resources: Conceptual references
+🛠 Resources: Suggest specific books, course names, or software tools 
 ✅ Assignments: 2-3 exercises or mini-projects
 
-🌟 STAGE 3: ADVANCED APPLICATION (Advanced Level)
+🌟 STAGE 3: ADVANCED APPLICATION (Advanced Level) 
 Goal: Goal for advanced mastery
 📘Topics: 4-6 advanced topics
-🛠 Resources: Conceptual references
+🛠 Resources: Suggest specific books, course names, or software tools 
 ✅ Assignments: 2-3 exercises or projects
 
-🌟 STAGE 4: RESEARCH & APPLICATION (Optional)
+🌟 STAGE 4: RESEARCH & APPLICATION (Optional) 
 Goal: Optional projects, contributions, or experiments
 🧠 Ideas: Suggestions for applying skills
 🧪 Tools to Learn: Relevant software, frameworks, or languages
