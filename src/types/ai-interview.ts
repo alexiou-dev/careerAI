@@ -42,7 +42,7 @@ export const ExampleAnswerInputSchema = z.object({
   resumePdfDataUri: z.string().optional().describe(
     "The user's resume in PDF format, as a data URI that must include a MIME type and use Base64 encoding. If provided, the answer should be based on this resume.",
   ),
-  context: z.string().optional().describe("Optional user-provided context or instructions for tailoring the answer"),
+  userContext: z.string().optional().describe("Optional user-provided context or instructions for tailoring the answer"),
 });
 export type ExampleAnswerInput = z.infer<typeof ExampleAnswerInputSchema>;
 
@@ -85,9 +85,9 @@ export const StoredInterviewSchema = z.object({
   jobRole: z.string(),
   jobDescription: z.string().optional(),
   resumePdfDataUri: z.string().optional(),
-  modelAnswerContext: z.string().optional(),
   questions: z.array(InterviewQuestionSchema),
   feedback: z.string(),
-  createdAt: z.string().datetime(),
+  createdAt: z.string(),
+  modelAnswerContext: z.string().optional(),
 });
 export type StoredInterview = z.infer<typeof StoredInterviewSchema>;
