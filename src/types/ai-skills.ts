@@ -30,14 +30,15 @@ export const AnalyzeSkillsInputSchema = z.object({
 export type AnalyzeSkillsInput = z.infer<typeof AnalyzeSkillsInputSchema>;
 
 // Schema for the AI flow output
-const SkillAnalysisSchema = z.object({
+const SkillGapSchema = z.object({
     skill: z.string().describe("The skill that is missing from the user's resume."),
-    recommendation: z.string().describe("A specific, actionable recommendation for how the user can learn this skill."),
+    roadmap: z.array(z.string()).describe("A step-by-step learning plan to acquire the missing skill."),
 });
-export type SkillAnalysis = z.infer<typeof SkillAnalysisSchema>;
-
 
 export const AnalyzeSkillsOutputSchema = z.object({
-  analysis: z.array(SkillAnalysisSchema).describe('A list of identified skill gaps and learning recommendations.'),
+  skillGaps: z.array(SkillGapSchema).describe("A list of identified skill gaps and their corresponding learning roadmaps."),
+  message: z.string().optional().describe("A message to be displayed if no significant skill gaps are found."),
 });
-export type AnalyzeSkillsOutput = z.infer<typeof AnalyzeSkillsOutputSchema>;
+
+export type SkillAnalysis = z.infer<typeof AnalyzeSkillsOutputSchema>;
+
