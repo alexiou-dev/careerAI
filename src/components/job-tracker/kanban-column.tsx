@@ -14,16 +14,18 @@ interface KanbanColumnProps {
   jobs: Job[];
   updateJobStatus: (jobId: string, newStatus: JobStatus) => void;
   deleteJob: (jobId: string) => void;
+  updateJob: (jobId: string, updates: Partial<Job>) => void;
 }
 
 const statusConfig = {
   Applied: { icon: FileClock, color: 'text-blue-500' },
   Interviewing: { icon: MessageSquare, color: 'text-yellow-500' },
   Rejected: { icon: XCircle, color: 'text-red-500' },
-  Accepted: { icon: CheckCircle2, color: 'text-green-500' },
+  Offers: { icon: CheckCircle2, color: 'text-green-500' },
 };
 
-export function KanbanColumn({ status, jobs, updateJobStatus, deleteJob }: KanbanColumnProps) {
+export function KanbanColumn({ status, jobs, updateJobStatus, deleteJob, updateJob }: KanbanColumnProps) 
+{
   const [isDraggedOver, setIsDraggedOver] = useState(false);
   const Icon = statusConfig[status].icon;
 
@@ -71,7 +73,7 @@ export function KanbanColumn({ status, jobs, updateJobStatus, deleteJob }: Kanba
         <ScrollArea className="h-[calc(100vh-22rem)]">
           <div className="p-4 space-y-4">
             {jobs.length > 0 ? (
-              jobs.map((job) => <JobCard key={job.id} job={job} onDelete={deleteJob} />)
+              jobs.map((job) => <JobCard key={job.id} job={job} onDelete={deleteJob} onUpdate={updateJob}/>)
             ) : (
               <div className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed text-sm text-muted-foreground">
                 Drag jobs here
