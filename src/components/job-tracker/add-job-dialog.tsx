@@ -25,19 +25,21 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Plus } from 'lucide-react';
-import type { Job } from '@/types';
+import type { Job, JobStatus } from '@/types';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Job title is required'),
   company: z.string().min(1, 'Company name is required'),
   url: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
   description: z.string().optional(),
+  status: z.enum(['Applied', 'Interviewing', 'Rejected', 'Offers']),
+  reminderDate: z.number().optional(), // timestamp
 });
 
 type AddJobFormValues = z.infer<typeof formSchema>;
 
 interface AddJobDialogProps {
-  onAddJob: (job: Omit<Job, 'id' | 'createdAt' | 'status'>) => void;
+  onAddJob: (job: Omit<Job, 'id' | 'createdAt'>) => void;
 }
 
 export function AddJobDialog({ onAddJob }: AddJobDialogProps) {
@@ -49,11 +51,23 @@ export function AddJobDialog({ onAddJob }: AddJobDialogProps) {
       company: '',
       url: '',
       description: '',
+      status: 'Applied',
+      reminderDate: undefined,
     },
   });
 
   function onSubmit(values: AddJobFormValues) {
-    onAddJob(values);
+    // Default reminder if status is Interviewing but no date chosen
+    let reminderDate = values.reminderDate;
+    if (values.status === 'Interviewing' && !reminderDate) {
+      reminderDate = Date.now() + 7 * 24 * 60 * 60 * 1000; // +7 days
+    }
+
+    onAddJob({
+      ...values,
+      reminderDate,
+    });
+
     form.reset();
     setOpen(false);
   }
@@ -75,6 +89,7 @@ export function AddJobDialog({ onAddJob }: AddJobDialogProps) {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            {/* Title */}
             <FormField
               control={form.control}
               name="title"
@@ -88,6 +103,8 @@ export function AddJobDialog({ onAddJob }: AddJobDialogProps) {
                 </FormItem>
               )}
             />
+
+            {/* Company */}
             <FormField
               control={form.control}
               name="company"
@@ -101,6 +118,8 @@ export function AddJobDialog({ onAddJob }: AddJobDialogProps) {
                 </FormItem>
               )}
             />
+
+            {/* URL */}
             <FormField
               control={form.control}
               name="url"
@@ -114,6 +133,8 @@ export function AddJobDialog({ onAddJob }: AddJobDialogProps) {
                 </FormItem>
               )}
             />
+
+            {/* Description */}
             <FormField
               control={form.control}
               name="description"
@@ -127,6 +148,57 @@ export function AddJobDialog({ onAddJob }: AddJobDialogProps) {
                 </FormItem>
               )}
             />
+
+            {/* Status */}
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <FormControl>
+                    <select
+                      {...field}
+                      className="border rounded p-2 w-full"
+                    >
+                      <option value="Applied">Applied</option>
+                      <option value="Interviewing">Interviewing</option>
+                      <option value="Rejected">Rejected</option>
+                      <option value="Offers">Offers</option>
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Reminder — only if Interviewing */}
+            {form.watch('status') === 'Interviewing' && (
+              <FormField
+                control={form.control}
+                name="reminderDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Reminder Date</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        value={
+                          field.value
+                            ? new Date(field.value).toISOString().split('T')[0]
+                            : ''
+                        }
+                        onChange={(e) =>
+                          field.onChange(new Date(e.target.value).getTime())
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="outline">Cancel</Button>
@@ -141,3 +213,4 @@ export function AddJobDialog({ onAddJob }: AddJobDialogProps) {
     </Dialog>
   );
 }
+
