@@ -12,10 +12,12 @@ import {
   Search, 
   FileText, 
   MessageSquare, 
-  TrendingUp,
+  Lightbulb,
+  Bot,
   ArrowRight,
   Sparkles,
   Target,
+  Building2
 } from "lucide-react";
 
 
@@ -55,8 +57,16 @@ const features = [
     {
       title: "Skill Analyzer",
       description: "Analyze job requirements and get a roadmap for your career growth.",
-      icon: TrendingUp,
+      icon: Lightbulb,
       path: "/skill-analyzer",
+      color: "bg-gradient-hero",
+      badge: "Growth"
+    },
+    {
+      title: "Company Fit Analyzer",
+      description: "Get an AI-powered analysis of a company's culture and how it matches your preferences.",
+      icon: Building2,
+      path: "/company-fit",
       color: "bg-gradient-hero",
       badge: "Growth"
     }
@@ -68,13 +78,30 @@ export default function Home() {
   return (
    <div className="min-h-screen bg-background">
   {/* Hero Section */}
-  <section className="relative overflow-hidden bg-gradient-to-b from-black to-gray-900 text-white">
+  <section className="relative h-screen overflow-hidden bg-gradient-to-b from-black to-gray-900 text-white">
+    {/* Top-right buttons */}
+  <div className="absolute top-6 right-6 flex gap-4 z-20">
+    <Link href="/login">
+      <Button size="lg" variant="outline" className="text-white border-2 border-white bg-transparent rounded-full hover:bg-white/10 px-6 py-2">
+        Login
+      </Button>
+    </Link>
+    <Link href="/login">
+      <Button size="lg" className="bg-primary text-white rounded-full hover:bg-primary/90 px-6 py-2">
+        Get Started
+      </Button>
+    </Link>
+  </div>
     <div
       className="absolute inset-0 bg-black/70 bg-cover bg-center opacity-30"
-      style={{ backgroundImage: `url(${heroImage.src})` }}
-    />
-
-    <div className="relative container mx-auto px-6 py-24 lg:py-32">
+      style={{ backgroundImage: `url(${heroImage.src})` }}/>
+    
+      <div className="absolute top-6 left-6 flex items-center space-x-2 z-20 cursor-pointer" onClick={() => window.location.reload()}>
+        <Bot className="h-12 w-12 text-primary" /> 
+        <span className="text-2xl font-bold text-white">CareerAI</span>
+      </div>
+      
+    <div className="relative container  mx-auto px-6 py-24 lg:py-32">
       <div className="max-w-4xl mx-auto text-center">
         <div className="flex justify-center mb-6">
           <Badge className="bg-black/60 border border-gray-700 text-gray-300 backdrop-blur-sm">
@@ -90,7 +117,7 @@ export default function Home() {
           </span>
         </h1>
 
-        <p className="text-xl lg:text-2xl mb-8 text-gray-300 max-w-3xl mx-auto leading-relaxed">
+        <p className="text-xl lg:text-xl mb-8 text-gray-300 max-w-3xl mx-auto leading-relaxed">
           From job tracking to AI-powered resume tailoring, everything you need
           to land your next role faster and smarter.
         </p>
@@ -99,8 +126,7 @@ export default function Home() {
           <Link href="/login">
             <Button
               size="lg"
-              className="h-12 px-8 text-base font-semibold transition-transform duration-300 hover:scale-105 hover:shadow-lg"
-            >
+              className="h-12 px-8 text-base font-semibold transition-transform duration-300 rounded-full hover:scale-105 hover:shadow-lg">
               <Target className="w-5 h-5 mr-2" />
               Get Started Free
             </Button>
