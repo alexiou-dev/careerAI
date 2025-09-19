@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Briefcase, FileText, Sparkles, Bot, LogOut, History, Settings, PenSquare, MessagesSquare, Lightbulb, Building2, TrendingUp  } from 'lucide-react';
+import { Briefcase, FileText, Sparkles, Bot, Settings, PenSquare, MessagesSquare, Lightbulb, Building2, TrendingUp  } from 'lucide-react';
 import { useAuth } from './auth-provider';
 
 import {
@@ -46,6 +46,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       icon: PenSquare,
     },
     {
+      href: '/skill-analyzer',
+      label: 'Skill Analyzer',
+      icon: Lightbulb,
+    },
+    {
       href: '/interview-prep',
       label: 'Interview Prep',
       icon: MessagesSquare,
@@ -54,11 +59,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       href: '/company-fit',
       label: 'Company Fit',
       icon: Building2,
-    },
-     {
-      href: '/resume-history',
-      label: 'Resume History',
-      icon: History,
     },
   ];
   
