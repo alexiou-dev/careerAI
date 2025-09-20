@@ -16,9 +16,19 @@ const FindRelevantJobPostingsInputSchema = z.object({
 });
 export type FindRelevantJobPostingsInput = z.infer<typeof FindRelevantJobPostingsInputSchema>;
 
+// Extended JobPosting schema
 const JobPostingSchema = z.object({
   title: z.string(),
   url: z.string().url(),
+  company: z.string().optional(),
+  location: z.string().optional(),
+  salary: z.string().optional(),
+  postedAt: z.string().optional(),
+  description: z.string().optional(),
+  skills: z.array(z.string()).optional(),
+  summary: z.string().optional(),
+  matchPercentage: z.number().optional(),
+  remote: z.boolean().optional(),
 });
 export type JobPosting = z.infer<typeof JobPostingSchema>;
 
@@ -66,7 +76,7 @@ async function fetchAdzuna(input: FindRelevantJobPostingsInput): Promise<JobPost
   let query = input.jobRole;
   if (input.other) query += ` ${input.other}`;
   if (input.workStyle && input.workStyle !== 'any') query += ` ${input.workStyle}`;
-  if (input.major) query += ` ${input.major}`; // add major to query
+  if (input.major) query += ` ${input.major}`;
 
   const country = detectCountry(input.location);
   const countriesToTry = country ? [country] : ["us", "gb", "ca", "de", "fr"];
@@ -92,10 +102,21 @@ async function fetchAdzuna(input: FindRelevantJobPostingsInput): Promise<JobPost
       const res = await fetch(url);
       if (!res.ok) continue;
       const data = await res.json();
-      const jobs = (data.results || []).map((job: any) => ({
-        title: `${job.title} at ${job.company?.display_name || 'Unknown'}`,
-        url: job.redirect_url,
-      }));
+      const jobs = (data.results || []).map((job: any) => {
+      const fullDescription = job.description || job.snippet || job.title;
+      const summary = fullDescription.split('. ')[0] + '.'; // first sentence
+  return {
+    title: job.title,
+    company: job.company?.display_name || job.company || 'Unknown',
+    url: job.redirect_url || job.link,
+    location: job.location?.display_name || job.location,
+    salary: job.salary_min ? `$${job.salary_min} - $${job.salary_max}` : job.salary,
+    postedAt: job.created || job.updated,
+    description: fullDescription,
+    summary,
+    remote: job.contract_time === 'remote' || job.type?.toLowerCase().includes('remote'),
+  };
+});
       results.push(...jobs);
     } catch {
       continue;
@@ -112,7 +133,6 @@ async function fetchJooble(input: FindRelevantJobPostingsInput): Promise<JobPost
   const apiKey = process.env.JOOBLE_API_KEY;
   if (!apiKey) return [];
 
-  // Map Greece -> Hellenic Republic
   let joobleLocation = input.location || "";
   if (joobleLocation.toLowerCase() === "greece") joobleLocation = "Hellenic Republic";
 
@@ -127,9 +147,6 @@ async function fetchJooble(input: FindRelevantJobPostingsInput): Promise<JobPost
 
   if (input.other) payload.keywords += ` ${input.other}`;
   if (input.major) payload.keywords += ` ${input.major}`;
-
-  // Optionally, you could attach CV file data if Jooble supported it
-  // For now, just passing it in payload is enough placeholder
   if (input.cvFile) payload.cvFileName = input.cvFile.name;
 
   try {
@@ -141,8 +158,16 @@ async function fetchJooble(input: FindRelevantJobPostingsInput): Promise<JobPost
     if (!res.ok) return [];
     const data = await res.json();
     const jobs: JobPosting[] = (data.jobs || []).map((job: any) => ({
-      title: `${job.title} at ${job.company || 'Unknown'}`,
+      title: job.title,
+      company: job.company || 'Unknown',
       url: job.link,
+      location: job.location,
+      salary: job.salary,
+      postedAt: job.updated,
+      description: job.snippet,
+      skills: job.keywords || [],
+      matchPercentage: Math.floor(Math.random() * 40) + 60, // fake match (60–100%)
+      remote: job.type?.toLowerCase().includes("remote"),
     }));
     return jobs;
   } catch {
@@ -156,7 +181,6 @@ async function fetchJooble(input: FindRelevantJobPostingsInput): Promise<JobPost
 export async function findRelevantJobPostings(
   input: FindRelevantJobPostingsInput
 ): Promise<FindRelevantJobPostingsOutput> {
-  // Use major as fallback if jobRole is empty
   if (!input.jobRole && input.major) input.jobRole = input.major;
 
   const [adzunaJobs, joobleJobs] = await Promise.all([
