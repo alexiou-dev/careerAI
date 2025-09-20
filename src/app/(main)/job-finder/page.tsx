@@ -227,7 +227,7 @@ export default function JobFinderPage() {
                 <FormItem>
                   <FormLabel>Other Preferences</FormLabel>
                   <FormUiControl>
-                    <Textarea {...field} placeholder="e.g., specific technologies, company size..." />
+                    <Textarea {...field} placeholder="e.g., specific technologies, internship, part-time..." />
                   </FormUiControl>
                   <FormMessage />
                 </FormItem>
