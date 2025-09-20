@@ -193,3 +193,4 @@ export async function findRelevantJobPostings(
 
   return { jobPostings: Array.from(allJobsMap.values()) };
 }
+
