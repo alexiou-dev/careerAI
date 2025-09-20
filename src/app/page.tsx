@@ -47,6 +47,14 @@ const features = [
       badge: "Customize"
     },
     {
+      title: "AI Writer",
+      description: "Generate personalized cover letters, thank-you emails, and more.",
+      icon: Building2,
+      path: "/documents",
+      color: "bg-gradient-hero",
+      badge: "AI-Powered"
+    },
+    {
       title: "Interview Prep",
       description: "Practice with an AI coach and get feedback on your answers and delivery.",
       icon: MessageSquare,
@@ -69,7 +77,7 @@ const features = [
       path: "/company-fit",
       color: "bg-gradient-hero",
       badge: "Growth"
-    }
+    },
   ];
 
 export default function Home() {
