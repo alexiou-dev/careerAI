@@ -526,7 +526,7 @@ export default function InterviewPrepPage() {
 
   return (
     <div className="grid h-[calc(100vh-8rem)] gap-6 lg:grid-cols-12">
-      <div className="lg:col-span-4 flex flex-col gap-6">
+      <div className="lg:col-span-5 flex flex-col gap-6">
         <Card>
             <CardHeader>
                 <CardTitle>Interview Prep Coach</CardTitle>
@@ -685,7 +685,7 @@ export default function InterviewPrepPage() {
         </Card>
       </div>
 
-      <div className="lg:col-span-8 flex flex-col h-full min-h-0">
+      <div className="lg:col-span-7 flex flex-col h-full min-h-0">
         {!activeInterview ? (
              <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
                 <Bot className="h-12 w-12 text-muted-foreground" />
