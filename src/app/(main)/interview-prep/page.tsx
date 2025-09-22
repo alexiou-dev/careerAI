@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Loader2, Sparkles, User, Trash2, Pencil, Send, ArrowDown, Upload, X, Mic, MicOff } from 'lucide-react';
+import { Bot, Loader2, Sparkles, User, Trash2, Pencil, Send, ArrowDown, Upload, X, Mic, MicOff, Star } from 'lucide-react';
 import {
     generateInterviewQuestions,
     getExampleAnswer,
@@ -148,6 +148,28 @@ export default function InterviewPrepPage() {
       });
     }
   }, [messages]);
+
+  const getSuccessScore = (interview: StoredInterview): number | null => {
+  // If any model answer exists → no score
+  if (interview.questions.some(q => q.modelAnswer)) return null;
+
+  // Only consider answered questions
+  const answered = interview.questions.filter(q => q.userAnswer.trim() !== "");
+  if (answered.length === 0) return null;
+
+  // Very simple scoring: count how many answers have non-empty feedback phrases like "good", "strong", etc.
+  // Replace this with your actual scoring logic (from feedback API if available)
+  const positiveKeywords = ["good", "strong", "excellent", "clear", "effective"];
+  let score = 0;
+
+  answered.forEach(q => {
+    const content = q.userAnswer.toLowerCase();
+    if (positiveKeywords.some(word => content.includes(word))) score++;
+  });
+
+  return Math.round((score / answered.length) * 100);
+};
+
 
   const saveInterviews = useCallback((updatedInterviews: StoredInterview[], newActiveInterview?: StoredInterview | null) => {
     setInterviews(updatedInterviews);
@@ -580,17 +602,39 @@ export default function InterviewPrepPage() {
                     {interviews.map(interview => (
                     <li key={interview.id} className='group'>
                         <div
-                            role="button"
-                            onClick={() => handleSelectInterview(interview)}
-                            className={cn(
-                                'flex items-center justify-between w-full rounded-md p-2 text-left h-auto hover:bg-accent cursor-pointer',
-                                activeInterview?.id === interview.id ? 'bg-secondary' : 'bg-transparent'
-                            )}
-                        >
-                            <div className='flex-1 truncate pr-2'>
-                                <p className='font-semibold truncate'>{interview.name}</p>
-                                <p className='text-xs text-muted-foreground'>{new Date(interview.createdAt).toLocaleDateString()}</p>
-                            </div>
+  role="button"
+  onClick={() => handleSelectInterview(interview)}
+  className={cn(
+    'flex items-center justify-between w-full rounded-md p-2 text-left h-auto hover:bg-accent cursor-pointer',
+    activeInterview?.id === interview.id ? 'bg-secondary' : 'bg-transparent'
+  )}
+>
+  <div className="flex-1 truncate pr-2">
+    <p className="font-semibold truncate flex items-center gap-2">
+      {interview.name}
+      {(() => {
+        const score = getSuccessScore(interview);
+        if (score === null) return null;
+
+        const color =
+          score >= 80
+            ? "text-green-600"
+            : score >= 70
+            ? "text-yellow-600"
+            : "text-gray-500";
+
+        return (
+           <span className="flex items-center gap-1 text-lg font-bold">
+        <Star className={`${color} h-4 w-4`} />
+        <span className={color}>{score}%</span>
+      </span>
+        );
+      })()}
+    </p>
+    <p className="text-xs text-muted-foreground">
+      {new Date(interview.createdAt).toLocaleDateString()}
+    </p>
+  </div>
                             <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Dialog open={isRenameDialogOpen && activeInterview?.id === interview.id} onOpenChange={(open) => { if(!open) setRenameValue(''); setIsRenameDialogOpen(open);}}>
                                     <DialogTrigger asChild>
@@ -608,6 +652,7 @@ export default function InterviewPrepPage() {
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => e.stopPropagation()}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                        
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader><AlertDialogTitle>Delete Interview?</AlertDialogTitle></AlertDialogHeader>
@@ -620,6 +665,18 @@ export default function InterviewPrepPage() {
                                 </AlertDialog>
                             </div>
                         </div>
+                       
+                         <Button
+                     onClick={(e) => {
+                     e.stopPropagation();
+                    handleStartInterview({
+                    jobRole: interview.jobRole,
+                    jobDescription: interview.jobDescription,
+                    resume: undefined, // You could reuse resume if you like
+                     });
+                     }}> Practice Again
+                      <Sparkles className="h-4 w-4 text-primary" />
+                       </Button>
                     </li>
                     ))}
                 </ul>
@@ -774,5 +831,7 @@ export default function InterviewPrepPage() {
     </div>
   );
 }
+
+    
 
     
