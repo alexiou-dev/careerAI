@@ -49,7 +49,7 @@ const features = [
     {
       title: "AI Writer",
       description: "Generate personalized cover letters, thank-you emails, and more.",
-      icon: Building2,
+      icon: Sparkles,
       path: "/documents",
       color: "bg-gradient-hero",
       badge: "AI-Powered"
