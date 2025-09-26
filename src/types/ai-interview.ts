@@ -51,7 +51,7 @@ export const ExampleAnswerOutputSchema = z.object({
 });
 export type ExampleAnswerOutput = z.infer<typeof ExampleAnswerOutputSchema>;
 
-// 3. Get Interview Feedback
+// 3. Get Interview Feedback (Text Only)
 const UserAnswerSchema = z.object({
   question: z.string(),
   answer: z.string(),
@@ -61,7 +61,7 @@ export const InterviewFeedbackInputSchema = z.object({
   jobRole: z.string().describe('The job role for context.'),
   userAnswers: z
     .array(UserAnswerSchema)
-    .describe("A list of questions and the user's corresponding answers. Skipped questions are not included."),
+    .describe("A list of questions and the user's corresponding answers."),
 });
 export type InterviewFeedbackInput = z.infer<typeof InterviewFeedbackInputSchema>;
 
@@ -69,6 +69,15 @@ export const InterviewFeedbackOutputSchema = z.object({
   feedback: z.string().describe('Overall constructive feedback on the user\'s performance, formatted as plain text.'),
 });
 export type InterviewFeedbackOutput = z.infer<typeof InterviewFeedbackOutputSchema>;
+
+// 4. Get Interview Score (Number Only)
+export const InterviewScoreInputSchema = InterviewFeedbackInputSchema;
+export type InterviewScoreInput = z.infer<typeof InterviewScoreInputSchema>;
+
+export const InterviewScoreOutputSchema = z.object({
+    score: z.number().describe('A numerical score from 0-100 based on the quality of the answers.')
+});
+export type InterviewScoreOutput = z.infer<typeof InterviewScoreOutputSchema>;
 
 
 // === LOCAL STORAGE & STATE MANAGEMENT ===
@@ -86,8 +95,15 @@ export const StoredInterviewSchema = z.object({
   jobDescription: z.string().optional(),
   resumePdfDataUri: z.string().optional(),
   questions: z.array(InterviewQuestionSchema),
+  score: z.number().optional(),
   feedback: z.string(),
   createdAt: z.string(),
   modelAnswerContext: z.string().optional(),
 });
 export type StoredInterview = z.infer<typeof StoredInterviewSchema>;
+
+export type ChatMessage = {
+    role: 'bot' | 'user';
+    content: string;
+    isModelAnswer?: boolean;
+}
