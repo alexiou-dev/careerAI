@@ -3,71 +3,24 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardFooter,
-  CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Loader2, Sparkles, User, Trash2, Pencil, Send, ArrowDown, Upload, X, Mic, MicOff, Star } from 'lucide-react';
 import {
     generateInterviewQuestions,
     getExampleAnswer,
     getInterviewFeedback,
+    getInterviewScore,
 } from '@/ai/flows/interview-prep';
 import {
   InterviewPrepFormSchema,
   type InterviewPrepFormValues,
   type StoredInterview,
   type InterviewQuestion,
+  type ChatMessage,
 } from '@/types/ai-interview';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-    DialogClose,
-  } from '@/components/ui/dialog';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Label } from '@/components/ui/label';
+import { InterviewSetup } from '@/components/interview-prep/InterviewSidebar';
+import { InterviewChat } from '@/components/interview-prep/InterviewChat';
 
 const INTERVIEW_STORAGE_KEY = 'interview-history';
-
-type ChatMessage = {
-    role: 'bot' | 'user';
-    content: string;
-    isModelAnswer?: boolean;
-}
 
 export default function InterviewPrepPage() {
   const [interviews, setInterviews] = useState<StoredInterview[]>([]);
@@ -78,25 +31,11 @@ export default function InterviewPrepPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isAnswering, setIsAnswering] = useState(false);
   const [isGettingFeedback, setIsGettingFeedback] = useState(false);
-  const [renameValue, setRenameValue] = useState('');
-  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
-  const { toast } = useToast();
-  const [showScrollButton, setShowScrollButton] = useState(false);
-  const [fileName, setFileName] = useState('');
-  const [modelAnswerContext, setModelAnswerContext] = useState('');
-  const [isModelAnswerDialogOpen, setIsModelAnswerDialogOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const { toast } = useToast();
   
   const recognitionRef = useRef<any>(null);
 
-
-  // ref to the messages viewport (the element that actually scrolls)
-  const messagesViewportRef = useRef<HTMLDivElement | null>(null);
-
-  // when true => allow auto-scrolling to bottom; when false => user is reviewing older messages
-  const autoScrollRef = useRef<boolean>(true);
-  const AUTO_SCROLL_THRESHOLD_PX = 150; // within this px from bottom we consider "at bottom"
-  
   useEffect(() => {
     // SpeechRecognition setup
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -136,41 +75,12 @@ export default function InterviewPrepPage() {
       console.error('Failed to load interviews from storage', e);
     }
   }, []);
-
-  // Auto-scroll when messages change, only if user is near bottom
-  useEffect(() => {
-    const el = messagesViewportRef.current;
-    if (!el) return;
-    if (autoScrollRef.current) {
-      // small timeout to ensure layout updated
-      requestAnimationFrame(() => {
-        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-      });
-    }
-  }, [messages]);
-
-  const getSuccessScore = (interview: StoredInterview): number | null => {
-  // If any model answer exists → no score
-  if (interview.questions.some(q => q.modelAnswer)) return null;
-
-  // Only consider answered questions
-  const answered = interview.questions.filter(q => q.userAnswer.trim() !== "");
-  if (answered.length === 0) return null;
-
-  // Very simple scoring: count how many answers have non-empty feedback phrases like "good", "strong", etc.
-  // Replace this with your actual scoring logic (from feedback API if available)
-  const positiveKeywords = ["good", "strong", "excellent", "clear", "effective"];
-  let score = 0;
-
-  answered.forEach(q => {
-    const content = q.userAnswer.toLowerCase();
-    if (positiveKeywords.some(word => content.includes(word))) score++;
+  
+  const form = useForm<InterviewPrepFormValues>({
+    resolver: zodResolver(InterviewPrepFormSchema),
+    defaultValues: { jobRole: '', jobDescription: '' },
   });
-
-  return Math.round((score / answered.length) * 100);
-};
-
-
+  
   const saveInterviews = useCallback((updatedInterviews: StoredInterview[], newActiveInterview?: StoredInterview | null) => {
     setInterviews(updatedInterviews);
     if (newActiveInterview !== undefined) {
@@ -182,23 +92,6 @@ export default function InterviewPrepPage() {
       console.error('Failed to save interviews to storage', e);
     }
   }, []);
-
-  const form = useForm<InterviewPrepFormValues>({
-    resolver: zodResolver(InterviewPrepFormSchema),
-    defaultValues: { jobRole: '', jobDescription: '' },
-  });
-
-  const fileRef = form.register('resume');
-  
-  const handleRemoveFile = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    form.setValue('resume', null);
-    setFileName('');
-    const fileInput = document.getElementById('resume-upload') as HTMLInputElement;
-    if (fileInput) {
-      fileInput.value = '';
-    }
-  };
 
   const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -238,20 +131,22 @@ export default function InterviewPrepPage() {
         resumePdfDataUri: resumePdfDataUri,
         questions: questions.map(q => ({ question: q, userAnswer: '', modelAnswer: ''})),
         feedback: '',
+        score: undefined,
         createdAt: new Date().toISOString(),
         modelAnswerContext: '',
       };
 
       const updatedInterviews = [newInterview, ...interviews];
-      // enable auto-scroll for a new session
-      autoScrollRef.current = true;
       
       setCurrentQuestionIndex(0);
       setMessages([{ role: 'bot', content: newInterview.questions[0].question }]);
       saveInterviews(updatedInterviews, newInterview);
       
       form.reset();
-      setFileName('');
+      // Also reset file input visually if needed
+      const fileInput = document.getElementById('resume-upload') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+
     } catch (error) {
         console.error(error);
         if (error instanceof Error && (error.message.includes('RATE_LIMIT_EXCEEDED'))) {
@@ -266,6 +161,28 @@ export default function InterviewPrepPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  const handlePracticeAgain = (interviewToRetry: StoredInterview) => {
+    if (!interviewToRetry) return;
+
+    const newInterview: StoredInterview = {
+      id: `interview_${Date.now()}`,
+      name: `${interviewToRetry.jobRole} Interview (Practice)`,
+      jobRole: interviewToRetry.jobRole,
+      jobDescription: interviewToRetry.jobDescription,
+      resumePdfDataUri: interviewToRetry.resumePdfDataUri,
+      questions: interviewToRetry.questions.map(q => ({ question: q.question, userAnswer: '', modelAnswer: ''})),
+      feedback: '',
+      score: undefined,
+      createdAt: new Date().toISOString(),
+      modelAnswerContext: '',
+    };
+
+    const updatedInterviews = [newInterview, ...interviews];
+    saveInterviews(updatedInterviews, newInterview);
+    
+    handleSelectInterview(newInterview);
   };
 
  const handleSelectInterview = (interview: StoredInterview) => {
@@ -287,7 +204,6 @@ export default function InterviewPrepPage() {
           reconstructedMessages.push({ role: 'bot', content: q.modelAnswer, isModelAnswer: true });
           nextQuestionIndex = i + 1;
         } else {
-          // This is the first unanswered question, so we stop here.
           break;
         }
       }
@@ -299,20 +215,11 @@ export default function InterviewPrepPage() {
 
     setMessages(reconstructedMessages);
 
-    // If we've answered all questions, index should be length of questions array.
     if (nextQuestionIndex >= interview.questions.length && interview.questions.every(q => q.userAnswer || q.modelAnswer)) {
       setCurrentQuestionIndex(interview.questions.length);
     } else {
       setCurrentQuestionIndex(nextQuestionIndex);
     }
-
-    autoScrollRef.current = true;
-    requestAnimationFrame(() => {
-      const el = messagesViewportRef.current;
-      if (el) {
-        el.scrollTo({ top: el.scrollHeight });
-      }
-    });
   };
 
   const updateActiveInterviewInStorage = (updatedInterview: StoredInterview) => {
@@ -334,7 +241,6 @@ export default function InterviewPrepPage() {
     }
   };
 
-
   const handleNextQuestion = () => {
     if (!activeInterview) return;
     
@@ -352,9 +258,6 @@ export default function InterviewPrepPage() {
 
         updateActiveInterviewInStorage(updatedInterview);
         setMessages(prev => [...prev, {role: 'user', content: userInput}]);
-
-        // when user submits an answer, we want to auto-scroll so they see the next question
-        autoScrollRef.current = true;
     }
 
     setUserInput('');
@@ -369,16 +272,15 @@ export default function InterviewPrepPage() {
     }
   };
 
-  const handleGetModelAnswer = async () => {
+  const handleGetModelAnswer = async (context: string) => {
     if (!activeInterview) return;
     setIsAnswering(true);
-    setIsModelAnswerDialogOpen(false);
     try {
         const currentQuestion = activeInterview.questions[currentQuestionIndex];
 
         const accumulatedContext = [
             activeInterview.modelAnswerContext || '',
-            modelAnswerContext || ''
+            context || ''
         ].filter(Boolean).join(' | ');
 
         const result = await getExampleAnswer({
@@ -401,10 +303,7 @@ export default function InterviewPrepPage() {
         updateActiveInterviewInStorage(updatedInterview);
 
         setMessages(prev => [...prev, {role: 'bot', content: result.exampleAnswer, isModelAnswer: true}]);
-        setModelAnswerContext('');
 
-        // after showing model answer, show the next question and auto-scroll
-        autoScrollRef.current = true;
         const nextIndex = currentQuestionIndex + 1;
         if (nextIndex < activeInterview.questions.length) {
             setCurrentQuestionIndex(nextIndex);
@@ -434,77 +333,59 @@ export default function InterviewPrepPage() {
     try {
         const answeredQuestions = activeInterview.questions.filter(q => q.userAnswer);
         if (answeredQuestions.length === 0) {
-            // This case is handled in the JSX now
             return;
         }
 
-        const result = await getInterviewFeedback({
+        const feedbackInput = {
             jobRole: activeInterview.jobRole,
             userAnswers: answeredQuestions.map(q => ({ question: q.question, answer: q.userAnswer }))
-        });
+        };
 
-        const updatedInterview = { ...activeInterview, feedback: result.feedback };
+        const [feedbackResult, scoreResult] = await Promise.all([
+            getInterviewFeedback(feedbackInput),
+            getInterviewScore(feedbackInput)
+        ]);
+
+        const updatedInterview = { 
+            ...activeInterview, 
+            feedback: feedbackResult.feedback, 
+            score: scoreResult.score 
+        };
         updateActiveInterviewInStorage(updatedInterview);
 
-        // append feedback message and auto-scroll to it
-        setMessages(prev => [...prev, { role: 'bot', content: result.feedback }]);
-        autoScrollRef.current = true;
+        setMessages(prev => [...prev, { role: 'bot', content: feedbackResult.feedback }]);
     } catch(e) {
-        if (e instanceof Error && (e.message.includes('RATE_LIMIT_EXCEEDED'))) {
-            toast({
-                variant: 'destructive',
-                title: 'API Quota Exceeded',
-                description: "You've reached the daily limit for the free tier. Please try again tomorrow.",
-            });
-        } else {
-            toast({ variant: 'destructive', title: 'Error getting feedback' });
-        }
-    } finally {
-        setIsGettingFeedback(false);
+    console.log('Caught error:', e);
+
+    if (e instanceof Error && e.message.includes('RATE_LIMIT_EXCEEDED')) {
+        console.log('Detected rate limit error');
+        toast({
+            variant: 'destructive',
+            title: 'API Quota Exceeded',
+            description: "You've reached the daily limit for the free tier. Please try again tomorrow.",
+        });
+    } else if (e instanceof Error) {
+        console.log('Other Error:', e.message);
+        toast({ variant: 'destructive', title: 'Error getting feedback', description: e.message });
+    } else {
+        console.log('Non-Error thrown:', e);
+        toast({ variant: 'destructive', title: 'Error getting feedback', description: JSON.stringify(e) });
     }
+} finally {
+    setIsGettingFeedback(false);
+}
   };
 
-  const handleRenameInterview = (id: string) => {
-    if (!renameValue) return;
-    const updated = interviews.map(i => i.id === id ? { ...i, name: renameValue } : i);
-    saveInterviews(updated, activeInterview?.id === id ? { ...activeInterview, name: renameValue } : activeInterview);
-    setIsRenameDialogOpen(false);
-    setRenameValue('');
+  const handleRenameInterview = (id: string, newName: string) => {
+    const updated = interviews.map(i => i.id === id ? { ...i, name: newName } : i);
+    saveInterviews(updated, activeInterview?.id === id ? { ...activeInterview, name: newName } : activeInterview);
   };
 
   const deleteInterview = (id: string) => {
-  const updated = interviews.filter(i => i.id !== id);
-
-  // Always save the updated list before doing anything else
-  saveInterviews(updated, activeInterview?.id === id ? null : activeInterview);
-
-  if (activeInterview?.id === id) {
-    // Refresh only if the deleted one was active
-    window.location.reload();
-  }
-};
-
-
-  const isInterviewOver = activeInterview && currentQuestionIndex >= activeInterview.questions.length;
-  const hasAnswers = activeInterview?.questions.some(q => q.userAnswer);
-
-
-  // Called when user scrolls the messages viewport: update autoScrollRef
-  const handleMessagesScroll = () => {
-    const el = messagesViewportRef.current;
-    if (!el) return;
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    const shouldShowButton = distanceFromBottom > AUTO_SCROLL_THRESHOLD_PX;
-    if (shouldShowButton !== showScrollButton) {
-      setShowScrollButton(shouldShowButton);
-    }
-    autoScrollRef.current = distanceFromBottom < AUTO_SCROLL_THRESHOLD_PX;
-  };
-  
-  const handleScrollToBottom = () => {
-    const el = messagesViewportRef.current;
-    if (el) {
-        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    const updated = interviews.filter(i => i.id !== id);
+    saveInterviews(updated, activeInterview?.id === id ? null : activeInterview);
+    if (activeInterview?.id === id) {
+      window.location.reload();
     }
   };
 
@@ -515,7 +396,6 @@ export default function InterviewPrepPage() {
     }
   }, [activeInterview]);
   
-  // Make sure to stop recording if the component unmounts or active interview changes
     useEffect(() => {
         return () => {
             if (recognitionRef.current && isRecording) {
@@ -526,312 +406,36 @@ export default function InterviewPrepPage() {
 
   return (
     <div className="grid h-[calc(100vh-8rem)] gap-6 lg:grid-cols-12">
-      <div className="lg:col-span-5 flex flex-col gap-6">
-        <Card>
-            <CardHeader>
-                <CardTitle>Interview Prep Coach</CardTitle>
-                <CardDescription>Start a new mock interview session.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleStartInterview)} className="space-y-4">
-                        <FormField control={form.control} name="jobRole" render={({ field }) => (<FormItem><FormLabel>Job Role</FormLabel><FormControl><Input placeholder="e.g., Product Manager" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="jobDescription" render={({ field }) => (<FormItem><FormLabel>Job Description (Optional)</FormLabel><FormControl><Textarea placeholder="Paste the job description for more tailored questions." className="min-h-[100px]" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField
-                            control={form.control}
-                            name="resume"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Your Resume (PDF, Optional)</FormLabel>
-                                <FormControl>
-                                  <div className="relative">
-                                    <Input
-                                    type="file"
-                                    accept=".pdf"
-                                    className="hidden"
-                                    {...fileRef}
-                                    onChange={(e) => {
-                                        field.onChange(e.target.files);
-                                        setFileName(e.target.files?.[0]?.name || '');
-                                    }}
-                                    id="resume-upload"
-                                    />
-                                    <label
-                                      htmlFor="resume-upload"
-                                      className="flex h-10 w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground ring-offset-background cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                                    >
-                                      <Upload className="h-4 w-4" />
-                                      <span className='truncate'>{fileName || 'Choose a PDF file'}</span>
-                                    </label>
-                                     {fileName && (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="absolute right-1 top-1 h-8 w-8"
-                                        onClick={handleRemoveFile}
-                                      >
-                                        <X className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                        <Button type="submit" disabled={isLoading} className="w-full">
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                            Start New Interview
-                        </Button>
-                    </form>
-                </Form>
-            </CardContent>
-        </Card>
-        <Card className="flex flex-col flex-1 min-h-0">
-            <CardHeader>
-            <CardTitle>Interview History</CardTitle>
-            <CardDescription>Review your past sessions.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 p-2 min-h-0">
-              <ScrollArea className="h-full">
-                <ul className='space-y-1 pr-2'>
-                    {interviews.length === 0 && (
-                        <li className='text-center text-sm text-muted-foreground py-4'>No past interviews.</li>
-                    )}
-                    {interviews.map(interview => (
-                    <li key={interview.id} className='group'>
-                        <div
-  role="button"
-  onClick={() => handleSelectInterview(interview)}
-  className={cn(
-    'flex items-center justify-between w-full rounded-md p-2 text-left h-auto hover:bg-accent cursor-pointer',
-    activeInterview?.id === interview.id ? 'bg-secondary' : 'bg-transparent'
-  )}
->
-  <div className="flex-1 truncate pr-2">
-    <p className="font-semibold truncate flex items-center gap-2">
-      {interview.name}
-      {(() => {
-        const score = getSuccessScore(interview);
-        if (score === null) return null;
-
-        const color =
-          score >= 80
-            ? "text-green-600"
-            : score >= 70
-            ? "text-yellow-600"
-            : "text-gray-500";
-
-        return (
-           <span className="flex items-center gap-1 text-lg font-bold">
-        <Star className={`${color} h-4 w-4`} />
-        <span className={color}>{score}%</span>
-      </span>
-        );
-      })()}
-    </p>
-    <p className="text-xs text-muted-foreground">
-      {new Date(interview.createdAt).toLocaleDateString()}
-    </p>
-  </div>
-                            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Dialog open={isRenameDialogOpen && activeInterview?.id === interview.id} onOpenChange={(open) => { if(!open) setRenameValue(''); setIsRenameDialogOpen(open);}}>
-                                    <DialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => {e.stopPropagation(); handleSelectInterview(interview); setRenameValue(interview.name); setIsRenameDialogOpen(true); }}><Pencil className="h-4 w-4" /></Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader><DialogTitle>Rename Interview</DialogTitle></DialogHeader>
-                                        <Input value={renameValue} onChange={e => setRenameValue(e.target.value)} placeholder="Enter new name" />
-                                        <DialogFooter>
-                                            <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                                            <Button onClick={() => handleRenameInterview(interview.id)}>Save</Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => e.stopPropagation()}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                        
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>Delete Interview?</AlertDialogTitle></AlertDialogHeader>
-                                        <AlertDialogDescription>This will permanently delete "{interview.name}".</AlertDialogDescription>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => deleteInterview(interview.id)} className='bg-destructive hover:bg-destructive/90'>Delete</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        </div>
-                       
-                         <Button
-                     onClick={(e) => {
-                     e.stopPropagation();
-                    handleStartInterview({
-                    jobRole: interview.jobRole,
-                    jobDescription: interview.jobDescription,
-                    resume: undefined, // You could reuse resume if you like
-                     });
-                     }}> Practice Again
-                      <Sparkles className="h-4 w-4 text-primary" />
-                       </Button>
-                    </li>
-                    ))}
-                </ul>
-              </ScrollArea>
-            </CardContent>
-        </Card>
-      </div>
-
-      <div className="lg:col-span-7 flex flex-col h-full min-h-0">
-        {!activeInterview ? (
-             <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
-                <Bot className="h-12 w-12 text-muted-foreground" />
-                <p className="mt-4 text-lg font-medium text-muted-foreground">
-                    Your mock interview will appear here.
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                    Start a new session or select a past one to review.
-                </p>
-            </div>
-        ) : (
-          <Card className="flex flex-col h-full min-h-0">
-            <CardHeader>
-                <CardTitle>{activeInterview.name}</CardTitle>
-                <CardDescription>Question {Math.min(currentQuestionIndex + 1, activeInterview.questions.length)} of {activeInterview.questions.length}</CardDescription>
-            </CardHeader>
-
-            <CardContent className='flex-1 min-h-0 p-0 relative'>
-              {showScrollButton && (
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="absolute bottom-4 right-4 z-10 rounded-full"
-                        onClick={handleScrollToBottom}
-                    >
-                        <ArrowDown className="h-4 w-4" />
-                    </Button>
-                )}
-              <div
-                ref={messagesViewportRef}
-                onScroll={handleMessagesScroll}
-                className="h-full overflow-auto p-6 space-y-6"
-                aria-live="polite"
-              >
-                {isLoading && <Skeleton className="h-24 w-full" />}
-                {messages.map((message, index) => (
-                    <div key={index} className={cn('flex items-start gap-3', message.role === 'user' && 'justify-end')}>
-                         {message.role === 'bot' && <Bot className='h-6 w-6 text-primary shrink-0' />}
-                         <div className={cn('rounded-lg p-3 max-w-[80%] text-sm',
-                           message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted',
-                           message.isModelAnswer && 'bg-accent/20 border border-accent/50'
-                         )}>
-                             {message.isModelAnswer && <p className='font-semibold mb-1'>Model Answer:</p>}
-                            <p className='whitespace-pre-line'>{message.content}</p>
-                         </div>
-                         {message.role === 'user' && <User className='h-6 w-6 shrink-0' />}
-                    </div>
-                ))}
-                {(isGettingFeedback || isAnswering) && <div className='flex justify-center'><Loader2 className="h-6 w-6 animate-spin" /></div>}
-              </div>
-            </CardContent>
-
-            {!activeInterview.feedback && (
-                <CardFooter className='border-t pt-6'>
-                    {isInterviewOver ? (
-                        <>
-                        {hasAnswers ? (
-                             <Button onClick={handleGetFeedback} disabled={isGettingFeedback} className='w-full'>
-                                {isGettingFeedback ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                Get Feedback
-                             </Button>
-                        ) : (
-                            <p className="w-full text-center text-sm text-muted-foreground">
-                                No answers were provided to give feedback on.
-                            </p>
-                        )}
-                        </>
-                    ) : (
-                        <div className="w-full space-y-4">
-                            <div className="relative">
-                                <Textarea 
-                                    placeholder={isRecording ? 'Recording your answer...' : 'Type or record your answer here...'}
-                                    value={userInput}
-                                    onChange={(e) => setUserInput(e.target.value)}
-                                    disabled={isAnswering}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            if (userInput.trim()) handleNextQuestion();
-                                        }
-                                    }}
-                                    className="h-36 pr-12"
-                                />
-                                <Button
-                                    type="button"
-                                    variant={isRecording ? "destructive" : "outline"}
-                                    size="icon"
-                                    className="absolute right-2 top-2 h-8 w-8"
-                                    onClick={handleToggleRecording}
-                                    disabled={isAnswering}
-                                >
-                                    {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                                </Button>
-                            </div>
-                            <div className='flex justify-between gap-4'>
-                                 <Dialog open={isModelAnswerDialogOpen} onOpenChange={setIsModelAnswerDialogOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button variant="ghost" disabled={isAnswering}>
-                                            <Bot className="mr-2 h-4 w-4" />
-                                            Get Model Answer
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>Customize Model Answer</DialogTitle>
-                                            <DialogDescription>
-                                                Add any notes or context for the AI to consider when generating the answer.
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <div className='space-y-2 py-4'>
-                                          <Label htmlFor='model-answer-context'>Optional Context</Label>
-                                           <Textarea 
-                                             id='model-answer-context'
-                                             placeholder='e.g., "I have no direct experience in this area" or "Focus on my academic projects."'
-                                             value={modelAnswerContext}
-                                             onChange={(e) => setModelAnswerContext(e.target.value)}
-                                             className='min-h-[100px]'
-                                            />
-                                        </div>
-                                        <DialogFooter>
-                                           <DialogClose asChild>
-                                             <Button variant="outline">Cancel</Button>
-                                           </DialogClose>
-                                           <Button onClick={handleGetModelAnswer} disabled={isAnswering}>
-                                            {isAnswering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                             Generate
-                                           </Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                                <Button onClick={handleNextQuestion} disabled={!userInput.trim() || isAnswering}>
-                                    Submit Answer
-                                     <Send className="ml-2 h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                </CardFooter>
-            )}
-          </Card>
-        )}
-      </div>
+      <InterviewSetup
+        form={form}
+        isLoading={isLoading}
+        interviews={interviews}
+        activeInterview={activeInterview}
+        onStartInterview={handleStartInterview}
+        onSelectInterview={handleSelectInterview}
+        onRenameInterview={handleRenameInterview}
+        onDeleteInterview={deleteInterview}
+        onPracticeAgain={handlePracticeAgain}
+      />
+      <InterviewChat
+        activeInterview={activeInterview}
+        messages={messages}
+        currentQuestionIndex={currentQuestionIndex}
+        isAnswering={isAnswering}
+        isGettingFeedback={isGettingFeedback}
+        isRecording={isRecording}
+        userInput={userInput}
+        onUserInput={setUserInput}
+        onNextQuestion={handleNextQuestion}
+        onGetModelAnswer={handleGetModelAnswer}
+        onGetFeedback={handleGetFeedback}
+        onToggleRecording={handleToggleRecording}
+        onPracticeAgain={() => handlePracticeAgain(activeInterview!)}
+        onMessagesUpdate={setMessages}
+      />
     </div>
   );
 }
-
     
 
     
