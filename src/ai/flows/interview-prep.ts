@@ -6,6 +6,7 @@
  * - generateInterviewQuestions: Creates a list of questions for a given role.
  * - getExampleAnswer: Provides an ideal answer to a specific interview question.
  * - getInterviewFeedback: Gives feedback on the user's answers at the end of the interview.
+ * - getInterviewScore: Generates a numerical score based on user's answers.
  */
 
 import { ai } from '@/ai/genkit';
@@ -16,12 +17,16 @@ import {
   ExampleAnswerOutputSchema,
   InterviewFeedbackInputSchema,
   InterviewFeedbackOutputSchema,
+  InterviewScoreInputSchema,
+  InterviewScoreOutputSchema,
   type GenerateQuestionsInput,
   type GenerateQuestionsOutput,
   type ExampleAnswerInput,
   type ExampleAnswerOutput,
   type InterviewFeedbackInput,
   type InterviewFeedbackOutput,
+  type InterviewScoreInput,
+  type InterviewScoreOutput,
 } from '@/types/ai-interview';
 
 /**
@@ -86,10 +91,10 @@ export async function getExampleAnswer(
     ---
     {{/if}}
 
-    {{#if context}}
+    {{#if userContext}}
     Additional user-provided instructions to consider when generating the answer:
     ---
-    {{{context}}}
+    {{{userContext}}}
     ---
     {{/if}}
 
@@ -120,22 +125,19 @@ export async function getInterviewFeedback(
     output: { schema: InterviewFeedbackOutputSchema },
     prompt: `You are an expert interview coach providing final feedback to a candidate who just completed a mock interview for the role of {{jobRole}}.
     
-    Here are the questions they were asked and the answers they provided. Some questions may not have an answer if the user skipped them.
+    Here are the questions they were asked and the answers they provided.
     
     {{#each userAnswers}}
       **Question**: {{{question}}}
       **Answer**: {{{answer}}}
     {{/each}}
     
-    **Instructions:**
-    1.  Analyze the user's answers provided above. Do NOT comment on skipped questions.
-    2.  Provide a concise, overall summary of their performance.
-    3.  Give 2-3 specific, actionable pieces of feedback for improvement. Frame these as "Areas for Improvement".
-    4.  Highlight 1-2 things the candidate did well. Frame these as "Strengths".
-    5.  The feedback should be encouraging and constructive.
-    6.  The output MUST be plain text. Do not use markdown. Use single empty lines to separate paragraphs.
-    5.  If recording: Also provide feedback on their delivery. Comment on pacing, clarity, and the potential use of filler words (e.g., "um", "ah", "like"). Provide suggestions for speaking more confidently and clearly. Frame this as "Delivery Feedback".
-    6.  The feedback should be encouraging and constructive.
+    Your task is to generate constructive 'feedback' as a plain text string. The feedback text should contain:
+    - A concise overall summary.
+    - 2-3 "Areas for Improvement".
+    - 1-2 "Strengths".
+    - If a recording was used, comment on delivery (pacing, clarity, filler words) under "Delivery Feedback".
+    - The feedback must be encouraging and use single empty lines to separate paragraphs. Do not use markdown.
     `,
   });
   try {
@@ -147,5 +149,38 @@ export async function getInterviewFeedback(
         }
         throw error;
     }
+}
+
+
+/**
+ * Generates a numerical score based on the user's interview performance.
+ */
+export async function getInterviewScore(
+  input: InterviewScoreInput
+): Promise<InterviewScoreOutput> {
+  const prompt = ai.definePrompt({
+    name: 'getInterviewScorePrompt',
+    input: { schema: InterviewScoreInputSchema },
+    output: { schema: InterviewScoreOutputSchema },
+    prompt: `You are an expert interview coach. Based on the following questions and user answers for the role of {{jobRole}}, provide a numerical score from 0-100 evaluating the overall quality of the user's responses.
+      
+      {{#each userAnswers}}
+        **Question**: {{{question}}}
+        **Answer**: {{{answer}}}
+      {{/each}}
+
+      Your response MUST only be the JSON object with the score.
+    `,
+  });
+
+  try {
+    const { output } = await prompt(input);
+    return output!;
+  } catch (error: any) {
+    if (error.message?.includes('429') || error.message?.includes('quota')) {
+      throw new Error('RATE_LIMIT_EXCEEDED');
+    }
+    throw error;
+  }
 }
        
