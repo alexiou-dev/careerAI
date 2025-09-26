@@ -93,7 +93,7 @@ export function InterviewSetup({
   }
 
   return (
-    <div className="lg:col-span-4 flex flex-col gap-6">
+    <div className="lg:col-span-5 flex flex-col gap-6">
         <Card>
             <CardHeader>
                 <CardTitle>Interview Prep Coach</CardTitle>
@@ -174,45 +174,81 @@ export function InterviewSetup({
                             : 'text-muted-foreground'
                             : '';
                     return (
-                    <li key={interview.id} className='group'>
-                        <div
-                            role="button"
-                            onClick={() => onSelectInterview(interview)}
-                            className={cn(
-                                'flex items-center justify-between w-full rounded-md p-2 text-left h-auto hover:bg-accent cursor-pointer',
-                                activeInterview?.id === interview.id ? 'bg-secondary' : 'bg-transparent'
-                            )}
-                        >
-                            <div className='flex-1 truncate pr-2'>
-                                <p className='font-semibold truncate'>{interview.name}</p>
-                                <p className='text-xs text-muted-foreground'>{new Date(interview.createdAt).toLocaleDateString()}</p>
-                            </div>
-                            <div className='flex items-center'>
-                                {interview.score != null && !hasModelAnswer && (
-                                    <span className={cn('text-sm font-bold mr-2', scoreColor)}>
-                                        {interview.score}%
-                                    </span>
-                                )}
-                                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => {e.stopPropagation(); onPracticeAgain(interview)}}><RefreshCw className="h-4 w-4" /></Button>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => {e.stopPropagation(); setInterviewToRename(interview); setRenameValue(interview.name); }}><Pencil className="h-4 w-4" /></Button>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => e.stopPropagation()}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader><AlertDialogTitle>Delete Interview?</AlertDialogTitle></AlertDialogHeader>
-                                            <AlertDialogDescription>This will permanently delete "{interview.name}".</AlertDialogDescription>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => onDeleteInterview(interview.id)} className='bg-destructive hover:bg-destructive/90'>Delete</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
-                            </div>
-                        </div>
-                    </li>
+                    <li key={interview.id} className="group">
+  <div
+    role="button"
+    onClick={() => onSelectInterview(interview)}
+    className={cn(
+      'flex flex-col sm:flex-row justify-between w-full rounded-md p-2 text-left cursor-pointer hover:bg-accent',
+      activeInterview?.id === interview.id ? 'bg-secondary' : 'bg-transparent'
+    )}
+  >
+    {/* Left: Name + date */}
+    <div className="flex-1 min-w-0">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="font-semibold truncate">{interview.name}</p>
+        {interview.score != null && !hasModelAnswer && (
+          <span className={cn('flex items-center gap-1 text-lg font-bold', scoreColor)}>
+            <Star className="h-4 w-4" /> {interview.score}%
+          </span>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {new Date(interview.createdAt).toLocaleDateString()}
+      </p>
+    </div>
+
+    {/* Right: icons */}
+    <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1 sm:mt-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={e => { e.stopPropagation(); onPracticeAgain(interview); }}
+      >
+        <RefreshCw className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={e => { e.stopPropagation(); setInterviewToRename(interview); setRenameValue(interview.name); }}
+      >
+        <Pencil className="h-4 w-4" />
+      </Button>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-destructive"
+            onClick={e => e.stopPropagation()}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Interview?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogDescription>
+            This will permanently delete "{interview.name}".
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => onDeleteInterview(interview.id)}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  </div>
+</li>
+
                     )})}
                 </ul>
               </ScrollArea>
@@ -231,3 +267,4 @@ export function InterviewSetup({
       </div>
   )
 }
+
