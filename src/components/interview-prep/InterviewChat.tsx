@@ -25,7 +25,6 @@ import {
     DialogTrigger,
     DialogClose,
   } from '@/components/ui/dialog';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface InterviewChatProps {
     activeInterview: StoredInterview | null;
@@ -58,7 +57,6 @@ export function InterviewChat({
     onGetFeedback,
     onToggleRecording,
     onPracticeAgain,
-    onMessagesUpdate,
 }: InterviewChatProps) {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [modelAnswerContext, setModelAnswerContext] = useState('');
@@ -104,7 +102,7 @@ export function InterviewChat({
 
   if (!activeInterview) {
     return (
-         <div className="lg:col-span-8 flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
+         <div className="lg:col-span-7 flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
             <Bot className="h-12 w-12 text-muted-foreground" />
             <p className="mt-4 text-lg font-medium text-muted-foreground">
                 Your mock interview will appear here.
@@ -120,7 +118,7 @@ export function InterviewChat({
   const hasAnswers = activeInterview.questions.some(q => q.userAnswer);
 
   return (
-    <div className="lg:col-span-8 flex flex-col h-full min-h-0">
+    <div className="lg:col-span-7 flex flex-col h-full min-h-0">
         <Card className="flex flex-col h-full min-h-0">
             <CardHeader>
                 <CardTitle>{activeInterview.name}</CardTitle>
@@ -178,9 +176,12 @@ export function InterviewChat({
                             Get Feedback
                          </Button>
                     ) : (
-                        <p className="w-full text-center text-sm text-muted-foreground">
-                            No answers were provided to give feedback on.
-                        </p>
+                        <><p className="w-full text-center text-sm text-muted-foreground">
+                      No answers were provided to give feedback on.
+                    </p><Button onClick={onPracticeAgain}>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Practice Again
+                      </Button></>
                     )}
                     </>
                 ) : (
