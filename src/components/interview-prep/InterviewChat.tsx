@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Bot, Loader2, Sparkles, User, Send, ArrowDown, Mic, MicOff, RefreshCw } from 'lucide-react';
+import { Bot, Loader2, Sparkles, User, Send, ArrowDown, Mic, MicOff, RefreshCw, Bookmark } from 'lucide-react';
 import { type StoredInterview, type ChatMessage } from '@/types/ai-interview';
 import { cn } from '@/lib/utils';
 import {
@@ -25,6 +25,7 @@ import {
     DialogTrigger,
     DialogClose,
   } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface InterviewChatProps {
     activeInterview: StoredInterview | null;
@@ -41,7 +42,9 @@ interface InterviewChatProps {
     onToggleRecording: () => void;
     onPracticeAgain: () => void;
     onMessagesUpdate: (messages: ChatMessage[]) => void;
+    onBankQuestion: (question: string) => void;
 }
+
 
 export function InterviewChat({
     activeInterview,
@@ -57,10 +60,12 @@ export function InterviewChat({
     onGetFeedback,
     onToggleRecording,
     onPracticeAgain,
+    onBankQuestion,
 }: InterviewChatProps) {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [modelAnswerContext, setModelAnswerContext] = useState('');
   const [isModelAnswerDialogOpen, setIsModelAnswerDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const messagesViewportRef = useRef<HTMLDivElement | null>(null);
   const autoScrollRef = useRef<boolean>(true);
@@ -99,6 +104,10 @@ export function InterviewChat({
     setIsModelAnswerDialogOpen(false);
     setModelAnswerContext('');
   }
+
+  const handleBankQuestionClick = (question: string) => {
+    onBankQuestion(question);
+  };
 
   if (!activeInterview) {
     return (
@@ -143,16 +152,28 @@ export function InterviewChat({
                 aria-live="polite"
               >
                 {messages.map((message, index) => (
-                    <div key={index} className={cn('flex items-start gap-3', message.role === 'user' && 'justify-end')}>
+                    <div key={index} className={cn('group/message flex items-start gap-3', message.role === 'user' && 'justify-end')}>
                          {message.role === 'bot' && <Bot className='h-6 w-6 text-primary shrink-0' />}
                          <div className={cn('rounded-lg p-3 max-w-[80%] text-sm',
                            message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted',
-                           message.isModelAnswer && 'bg-accent/20 border border-accent/50'
+                           message.isModelAnswer && 'bg-accent/20 border border-accent/50',
+                           message.isFeedback && 'bg-blue-500/10 border border-blue-500/20'
                          )}>
                              {message.isModelAnswer && <p className='font-semibold mb-1'>Model Answer:</p>}
                             <p className='whitespace-pre-line'>{message.content}</p>
                          </div>
                          {message.role === 'user' && <User className='h-6 w-6 shrink-0' />}
+                         {message.role === 'bot' && message.isQuestion && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 opacity-0 group-hover/message:opacity-100 transition-opacity"
+                                onClick={() => handleBankQuestionClick(message.content)}
+                                aria-label="Save question to bank"
+                            >
+                                <Bookmark className="h-4 w-4" />
+                            </Button>
+                         )}
                     </div>
                 ))}
                 {(isGettingFeedback || isAnswering) && <div className='flex justify-center'><Loader2 className="h-6 w-6 animate-spin" /></div>}
@@ -176,12 +197,15 @@ export function InterviewChat({
                             Get Feedback
                          </Button>
                     ) : (
-                        <><p className="w-full text-center text-sm text-muted-foreground">
-                      No answers were provided to give feedback on.
-                    </p><Button onClick={onPracticeAgain}>
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Practice Again
-                      </Button></>
+                        <div className="w-full flex items-center justify-center gap-4">
+                            <p className="text-sm text-muted-foreground">
+                                No answers were provided to give feedback on.
+                            </p>
+                            <Button onClick={onPracticeAgain}>
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Practice Again
+                            </Button>
+                        </div>
                     )}
                     </>
                 ) : (
