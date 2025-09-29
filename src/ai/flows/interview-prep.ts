@@ -7,6 +7,7 @@
  * - getExampleAnswer: Provides an ideal answer to a specific interview question.
  * - getInterviewFeedback: Gives feedback on the user's answers at the end of the interview.
  * - getInterviewScore: Generates a numerical score based on user's answers.
+ * - analyzeAndBankQuestion: Analyzes a question for the question bank.
  */
 
 import { ai } from '@/ai/genkit';
@@ -19,6 +20,8 @@ import {
   InterviewFeedbackOutputSchema,
   InterviewScoreInputSchema,
   InterviewScoreOutputSchema,
+  BankQuestionInputSchema,
+  BankQuestionOutputSchema,
   type GenerateQuestionsInput,
   type GenerateQuestionsOutput,
   type ExampleAnswerInput,
@@ -27,6 +30,8 @@ import {
   type InterviewFeedbackOutput,
   type InterviewScoreInput,
   type InterviewScoreOutput,
+  type BankQuestionInput,
+  type BankQuestionOutput,
 } from '@/types/ai-interview';
 
 /**
@@ -183,4 +188,40 @@ export async function getInterviewScore(
     throw error;
   }
 }
-       
+
+/**
+ * Analyzes a single question to be added to the Question Bank.
+ */
+export async function analyzeAndBankQuestion(
+  input: BankQuestionInput
+): Promise<BankQuestionOutput> {
+  const prompt = ai.definePrompt({
+    name: 'analyzeAndBankQuestionPrompt',
+    input: { schema: BankQuestionInputSchema },
+    output: { schema: BankQuestionOutputSchema },
+    prompt: `You are an expert interview analyst. Your task is to analyze the following interview question and provide structured data about it.
+
+Question: "{{{question}}}"
+
+Instructions:
+1.  Determine the question 'category'. It must be one of: 'Technical', 'Behavioral', or 'General'.
+2.  Determine the question 'difficulty'. It must be one of: 'Easy', 'Medium', or 'Hard'.
+3.  Generate 3-4 concise, actionable 'tips' for how to best answer this question.
+4.  Generate an 'idealAnswer' that is a well-structured, expert-level response to the question.
+
+Your response MUST be only the JSON object with the specified fields.
+`,
+  });
+
+  try {
+    const { output } = await prompt(input);
+    return output!;
+  } catch (error: any) {
+    console.error("Error in analyzeAndBankQuestion:", error);
+    if (error.message?.includes('429') || error.message?.includes('quota')) {
+      throw new Error('RATE_LIMIT_EXCEEDED');
+    }
+    throw error;
+  }
+}
+     
