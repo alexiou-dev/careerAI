@@ -248,7 +248,6 @@ export function InterviewSetup({
     </div>
   </div>
 </li>
-
                     )})}
                 </ul>
               </ScrollArea>
