@@ -10,7 +10,10 @@ export const InterviewPrepFormSchema = z.object({
   resume: z
     .any()
     .optional()
-    .refine((files) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+    .refine(
+      (files) => !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE,
+      `Max file size is 5MB.`
+    )
     .refine(
       (files) => !files || files.length === 0 || ACCEPTED_FILE_TYPES.includes(files?.[0]?.type),
       'Only .pdf files are accepted.'
@@ -25,8 +28,8 @@ export const GenerateQuestionsInputSchema = z.object({
   jobRole: z.string().describe('The job role the user is practicing for.'),
   jobDescription: z.string().optional().describe('The full job description for context.'),
   resumePdfDataUri: z.string().optional().describe(
-      "The user's resume in PDF format, as a data URI that must include a MIME type and use Base64 encoding."
-    ),
+    "The user's resume in PDF format, as a data URI that must include a MIME type and use Base64 encoding."
+  ),
 });
 export type GenerateQuestionsInput = z.infer<typeof GenerateQuestionsInputSchema>;
 
@@ -37,48 +40,57 @@ export type GenerateQuestionsOutput = z.infer<typeof GenerateQuestionsOutputSche
 
 // 2. Get Example Answer
 export const ExampleAnswerInputSchema = z.object({
-  jobRole: z.string().describe('The job role for context.'),
-  question: z.string().describe('The specific interview question to answer.'),
-  resumePdfDataUri: z.string().optional().describe(
-    "The user's resume in PDF format, as a data URI that must include a MIME type and use Base64 encoding. If provided, the answer should be based on this resume.",
-  ),
-  userContext: z.string().optional().describe("Optional user-provided context or instructions for tailoring the answer"),
+  jobRole: z.string(),
+  question: z.string(),
+  resumePdfDataUri: z.string().optional(),
+  userContext: z.string().optional(),
 });
 export type ExampleAnswerInput = z.infer<typeof ExampleAnswerInputSchema>;
 
 export const ExampleAnswerOutputSchema = z.object({
-  exampleAnswer: z.string().describe('An ideal, well-structured example answer to the question.'),
+  exampleAnswer: z.string(),
 });
 export type ExampleAnswerOutput = z.infer<typeof ExampleAnswerOutputSchema>;
 
-// 3. Get Interview Feedback (Text Only)
+// 3. Get Interview Feedback
 const UserAnswerSchema = z.object({
   question: z.string(),
   answer: z.string(),
 });
-
 export const InterviewFeedbackInputSchema = z.object({
-  jobRole: z.string().describe('The job role for context.'),
-  userAnswers: z
-    .array(UserAnswerSchema)
-    .describe("A list of questions and the user's corresponding answers."),
+  jobRole: z.string(),
+  userAnswers: z.array(UserAnswerSchema),
 });
 export type InterviewFeedbackInput = z.infer<typeof InterviewFeedbackInputSchema>;
 
 export const InterviewFeedbackOutputSchema = z.object({
-  feedback: z.string().describe('Overall constructive feedback on the user\'s performance, formatted as plain text.'),
+  feedback: z.string(),
 });
 export type InterviewFeedbackOutput = z.infer<typeof InterviewFeedbackOutputSchema>;
 
-// 4. Get Interview Score (Number Only)
+// 4. Get Interview Score
 export const InterviewScoreInputSchema = InterviewFeedbackInputSchema;
 export type InterviewScoreInput = z.infer<typeof InterviewScoreInputSchema>;
 
 export const InterviewScoreOutputSchema = z.object({
-    score: z.number().describe('A numerical score from 0-100 based on the quality of the answers.')
+  score: z.number(),
 });
 export type InterviewScoreOutput = z.infer<typeof InterviewScoreOutputSchema>;
 
+// 5. Analyze and Bank Question
+export const BankQuestionInputSchema = z.object({
+  question: z.string(),
+});
+export type BankQuestionInput = z.infer<typeof BankQuestionInputSchema>;
+
+export const BankQuestionOutputSchema = z.object({
+  question: z.string(),
+  category: z.enum(['Technical', 'Behavioral', 'General']),
+  difficulty: z.enum(['Easy', 'Medium', 'Hard']),
+  tips: z.array(z.string()),
+  idealAnswer: z.string(),
+});
+export type BankQuestionOutput = z.infer<typeof BankQuestionOutputSchema>;
 
 // === LOCAL STORAGE & STATE MANAGEMENT ===
 export const InterviewQuestionSchema = z.object({
@@ -102,8 +114,17 @@ export const StoredInterviewSchema = z.object({
 });
 export type StoredInterview = z.infer<typeof StoredInterviewSchema>;
 
+// Banked Question extends BankQuestionOutput with metadata
+export const BankedQuestionSchema = BankQuestionOutputSchema.extend({
+  id: z.string(),
+  createdAt: z.string(),
+});
+export type BankedQuestion = z.infer<typeof BankedQuestionSchema>;
+
 export type ChatMessage = {
-    role: 'bot' | 'user';
-    content: string;
-    isModelAnswer?: boolean;
-}
+  role: 'bot' | 'user';
+  content: string;
+  isModelAnswer?: boolean;
+  isQuestion?: boolean;
+  isFeedback?: boolean;
+};
