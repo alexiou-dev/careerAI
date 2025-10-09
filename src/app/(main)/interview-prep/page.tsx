@@ -475,13 +475,17 @@ export default function InterviewPrepPage() {
                         onPracticeAgain={handlePracticeAgain}
                     />
                 </TabsContent>
-                <TabsContent value="bank" className="flex-1 min-h-0 mt-4">
-                     <QuestionBankTab
-                        questions={questionBank}
-                        onPractice={(q) => handleStartInterview({ jobRole: q.category }, q.question)}
-                        onDelete={handleDeleteBankedQuestion}
-                     />
-                </TabsContent>
+                <TabsContent value="bank" className="mt-6">
+        <div className="grid gap-4">
+          <QuestionBankTab
+            questions={questionBank}
+            onPractice={(q) =>
+              handleStartInterview({ jobRole: q.category }, q.question)
+            }
+            onDelete={handleDeleteBankedQuestion}
+          />
+        </div>
+      </TabsContent>
             </Tabs>
         </div>
 
@@ -505,6 +509,8 @@ export default function InterviewPrepPage() {
     </div>
   );
 }
+
+    
 
    
     
