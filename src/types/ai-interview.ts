@@ -128,3 +128,4 @@ export type ChatMessage = {
   isQuestion?: boolean;
   isFeedback?: boolean;
 };
+
