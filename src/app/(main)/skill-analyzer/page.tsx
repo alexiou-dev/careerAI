@@ -436,7 +436,7 @@ export default function SkillAnalyzerPage() {
               <CardDescription>View and manage your saved learning roadmaps.</CardDescription>
             </CardHeader>
             <CardContent>
-               <ScrollArea className="h-full max-h-96">
+                <ScrollArea className="h-[calc(100vh-22rem)]">
                   {savedRoadmaps.length === 0 ? (
                     <div className="text-center text-sm text-muted-foreground py-8">
                       <FileText className="mx-auto h-8 w-8 mb-2" />
