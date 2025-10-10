@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-import { Sparkles, Loader2, Building2 } from 'lucide-react';
+import { Sparkles, Loader2, Building2, Newspaper, Briefcase } from 'lucide-react';
 import { analyzeCompanyFit } from '@/ai/flows/analyze-company-fit';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -43,16 +43,22 @@ export default function CompanyFitPage() {
     defaultValues: {
       companyName: '',
       preferences: [],
+      otherPreference: '',
     },
   });
+
+  const isOtherSelected = form.watch('preferences').includes('Other (please specify)');
 
   async function onSubmit(values: CompanyFitFormValues) {
     setIsLoading(true);
     setAnalysisResult(null);
     try {
+       const finalPreferences = values.preferences.map(p => (p === 'Other (please specify)' ? values.otherPreference : p)).filter(p => p); // Filter out empty strings
+
+
       const result = await analyzeCompanyFit({
         companyName: values.companyName,
-        userPreferences: values.preferences,
+        userPreferences: finalPreferences as string[],
       });
       setAnalysisResult(result);
     } catch (error) {
@@ -138,6 +144,21 @@ export default function CompanyFitPage() {
                   </FormItem>
                 )}
               />
+              {isOtherSelected && (
+                <FormField
+                    control={form.control}
+                    name="otherPreference"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Specify "Other" Preference</FormLabel>
+                        <FormControl>
+                        <Input placeholder="e.g., Strong mentorship programs" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                )}
               <Button type="submit" disabled={isLoading} className="w-full">
                 {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -151,10 +172,12 @@ export default function CompanyFitPage() {
         </CardContent>
       </Card>
       
-      <Card className="flex flex-col">
+       <Card className="flex flex-col">
         <CardHeader>
           <CardTitle>Analysis Result</CardTitle>
-          <CardDescription>The company's culture summary and your fit score will appear here.</CardDescription>
+          <CardDescription>
+            The company's culture summary and your fit score will appear here.
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col space-y-4">
           {isLoading && (
@@ -168,6 +191,7 @@ export default function CompanyFitPage() {
 
           {analysisResult && (
             <div className="space-y-6">
+              {/* Fit Score */}
               <div>
                 <h3 className="font-semibold text-lg">
                   Overall Fit Score: {analysisResult.overallFitScore}/100
@@ -175,41 +199,45 @@ export default function CompanyFitPage() {
                 <Progress value={analysisResult.overallFitScore} className="mt-2" />
               </div>
 
+              {/* Company Culture Summary */}
               <div>
                 <h3 className="font-semibold text-lg">Company Culture Summary</h3>
                 <p className="text-sm text-muted-foreground mt-1">
                   {analysisResult.companyCultureSummary}
                 </p>
-                <div className="mt-2 space-y-1">
+
+                {/* Links Section */}
+                <div className="mt-3 flex flex-col space-y-2">
                   <a
                     href={analysisResult.links.glassdoor}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 underline"
+                    className="flex items-center text-blue-600 hover:underline"
                   >
-                    Glassdoor Reviews
+                    <Building2 className="h-4 w-4 mr-2" /> Glassdoor Reviews
                   </a>
-                  <br />
+
                   <a
                     href={analysisResult.links.careers}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 underline"
+                    className="flex items-center text-blue-600 hover:underline"
                   >
-                    Company Careers
+                    <Briefcase className="h-4 w-4 mr-2" /> Company Careers
                   </a>
-                  <br />
+
                   <a
                     href={analysisResult.links.news}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 underline"
+                    className="flex items-center text-blue-600 hover:underline"
                   >
-                    Recent News Coverage
+                    <Newspaper className="h-4 w-4 mr-2" /> Recent News
                   </a>
                 </div>
               </div>
 
+              {/* Alignment Section */}
               <div>
                 <h3 className="font-semibold text-lg">Alignment with Your Preferences</h3>
                 <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">
@@ -218,16 +246,7 @@ export default function CompanyFitPage() {
               </div>
             </div>
           )}
-
-          {!isLoading && !analysisResult && (
-            <div className="flex flex-1 flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
-              <Building2 className="h-10 w-10 text-muted-foreground" />
-              <p className="mt-4 text-sm text-muted-foreground">
-                Your analysis will be shown here once generated.
-              </p>
-            </div>
-          )}
-        {!isLoading && !analysisResult && (
+         {!isLoading && !analysisResult && (
             <div className="flex flex-1 flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
               <Building2 className="h-10 w-10 text-muted-foreground" />
               <p className="mt-4 text-sm text-muted-foreground">Your analysis will be shown here once generated.</p>
