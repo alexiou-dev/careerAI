@@ -1,10 +1,16 @@
 import {z} from 'zod';
+import { FileText, Mail, Handshake } from 'lucide-react';
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 export const ACCEPTED_FILE_TYPES = ['application/pdf'];
-export const documentTypes = ["Cover Letter", "Thank-You Email", "Networking Outreach"] as const;
 
-export const DocumentTypeSchema = z.enum(documentTypes);
+export const documentTypes = [
+  { value: 'cover-letter', label: 'Cover Letter', icon: FileText },
+  { value: 'thank-you-email', label: 'Thank-You Email', icon: Mail },
+  { value: 'networking-outreach', label: 'Networking Outreach', icon: Handshake },
+] as const;
+
+export const DocumentTypeSchema = z.enum(documentTypes.map(d => d.value) as [string, ...string[]]);
 export type DocumentType = z.infer<typeof DocumentTypeSchema>;
 
 // Schema for the AI flow input
@@ -41,3 +47,4 @@ export const GenerateDocumentFormSchema = z.object({
 });
 
 export type GenerateDocumentFormValues = z.infer<typeof GenerateDocumentFormSchema>;
+
