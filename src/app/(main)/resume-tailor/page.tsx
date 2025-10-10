@@ -397,13 +397,68 @@ export default function ResumeTailorPage() {
             </div>
           )}
           {tailoredResume && (
-            <Textarea
-              readOnly
-              value={tailoredResume}
-              className="h-full min-h-[300px] text-sm bg-muted/50 focus-visible:ring-0"
-              aria-label="Tailored resume text"
-            />
-          )}
+  <div className="relative flex-1 w-full h-[520px] overflow-hidden rounded-md border bg-muted/30">
+    <div className="absolute inset-0 overflow-y-auto p-6">
+      <div
+        className="mx-auto bg-white shadow-sm rounded-sm border border-gray-200"
+        style={{
+          width: "100%",
+          maxWidth: "100%",
+          minHeight: "100%",
+          padding: "28px",
+          fontFamily: "'Calibri', 'Helvetica', sans-serif",
+          fontSize: "11pt",
+          lineHeight: "1.5",
+          color: "#000",
+          whiteSpace: "pre-wrap",
+        }}
+        dangerouslySetInnerHTML={{
+          __html: tailoredResume
+            .split('\n')
+            .map((line, i) => {
+              const trimmed = line.trim();
+
+              // === HEADER: NAME, JOB TITLE, CONTACT INFO ===
+              if (i < 5 && (
+                  /^[A-Z][a-z]+\s[A-Z][a-z]+$/.test(trimmed) || 
+                  trimmed.toLowerCase().includes("linkedin") ||
+                  trimmed.toLowerCase().includes("github") ||
+                  trimmed.includes("@")
+              )) {
+                return `<div style="text-align:center;font-weight:bold;margin-bottom:2px;">${trimmed}</div>`;
+              }
+
+              // === SECTION HEADERS (ALL CAPS) ===
+              if (/^[A-Z\s]{3,}$/.test(trimmed)) {
+                return `<div style="font-weight:bold;font-size:12pt;margin-top:18px;margin-bottom:6px;border-bottom:1px solid #000;padding-bottom:2px;">${trimmed}</div>`;
+              }
+
+              // === TITLES WITH DATES OR LOCATIONS (LEFT–RIGHT SPLIT) ===
+              if (trimmed.match(/(—|-|–)/) && trimmed.match(/\d{4}/)) {
+                const [left, right] = trimmed.split(/—|–|-/);
+                return `
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-top:6px;">
+                    <div style="font-weight:bold;">${left.trim()}</div>
+                    <div style="font-weight:normal;">${right.trim()}</div>
+                  </div>
+                `;
+              }
+
+              // === BULLET POINTS ===
+              if (trimmed.startsWith("•")) {
+                return `<div style="margin-left:18px;text-indent:-10px;">${trimmed}</div>`;
+              }
+
+              // === DEFAULT TEXT ===
+              return `<div style="margin-top:4px;">${trimmed}</div>`;
+            })
+            .join("")
+        }}
+      />
+    </div>
+  </div>
+)}
+
           {!isLoading && !tailoredResume && (
             <div className="flex flex-1 flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
               <FileText className="h-10 w-10 text-muted-foreground" />
