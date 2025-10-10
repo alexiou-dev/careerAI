@@ -50,9 +50,18 @@ export function useJobStore(userId?: string) {
     );
   }, []);
 
+  const updateJob = useCallback((jobId: string, updates: Partial<Job>) => {
+    setJobs(prevJobs =>
+      prevJobs.map(job =>
+        job.id === jobId ? { ...job, ...updates } : job
+      )
+    );
+  }, []);
+
   const deleteJob = useCallback((jobId: string) => {
     setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
   }, []);
 
-  return { jobs, addJob, updateJobStatus, deleteJob, isLoaded };
+  return { jobs, addJob, updateJobStatus, deleteJob, isLoaded, updateJob };
 }
+
