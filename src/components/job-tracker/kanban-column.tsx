@@ -85,3 +85,4 @@ export function KanbanColumn({ status, jobs, updateJobStatus, deleteJob, updateJ
     </Card>
   );
 }
+
