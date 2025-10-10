@@ -71,31 +71,23 @@ User's Key Preferences:
 
 Instructions:
 
-Company Culture Summary: Write a single, concise paragraph summarizing {{companyName}}'s culture, leadership influence, values, collaboration style, flexibility, innovation focus, and work environment. Avoid mentioning numeric ratings or scores. At the end of the paragraph, include three clickable links to sources (Glassdoor, company website, news articles) formatted exactly like this (Markdown):
-
-Learn more:  
-- [Glassdoor Reviews]({{glassdoorUrl}})  
-- [Company Careers]({{careersUrl}})  
-- [Recent News Coverage]({{newsUrl}})
+Company Culture Summary: Write a single, concise paragraph summarizing {{companyName}}'s culture, leadership influence, values, collaboration style, flexibility, innovation focus, and work environment. Avoid mentioning numeric ratings or scores. At the end of the paragraph, don't show  three clickable links to sources (Glassdoor, company website, news articles):
 
 Alignment with Your Preferences: For each user preference, write a narrative explaining how the company aligns or does not align with it. Give specific examples when possible. Structure each preference as:
 Regarding {Preference Name}: Description of alignment, strengths, weaknesses, and context.
 
-Overall Fit Score: Provide a realistic score from 0-100 that reflects the alignment analysis (but do not include numeric scores in the narrative paragraphs above; the user sees the score separately).
+Overall Fit Score: Provide a realistic score from 0-100 that reflects the alignment analysis (but do not include numeric scores in the narrative paragraphs above; the user sees the score separately). Do not include links.
 
 Output Format: Return all text as a single string with the structure:
 
 Company Culture Summary  
 [Summary paragraph]
 
-Learn more:  
-- [Glassdoor Reviews]({{glassdoorUrl}})  
-- [Company Careers]({{careersUrl}})  
-- [Recent News Coverage]({{newsUrl}})
-
 Alignment with Your Preferences  
 Regarding Work-Life Balance: ...  
 Regarding Career Growth Opportunities: ...  
+
+Learn more...
 
 Generate the analysis according to these instructions.`
 });
@@ -145,4 +137,5 @@ const analyzeCompanyFitFlow = ai.defineFlow(
     }
   }
 );
+
 
