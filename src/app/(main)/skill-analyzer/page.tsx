@@ -76,18 +76,42 @@ const fileToDataUri = (file: File): Promise<string> =>
   });
 
 export const RoadmapContent = ({ content }: { content: string }) => {
-  const lines = content.split('\n');
+  // Split the roadmap into sections by emojis
+  const sections = content.split(/(?=🌟|📘|🛠|✅|🧠|🧪)/g);
+
   return (
-    <div className="whitespace-pre-wrap font-sans text-sm p-4 bg-muted/50 rounded-md">
-      {lines.map((line, index) => {
-        if (line.startsWith('🌟')) {
-          return <strong key={index} className="block font-semibold text-foreground">{line}</strong>;
+    <div className="space-y-2 font-sans text-sm p-4 bg-muted/50 rounded-md">
+      {sections.map((section, index) => {
+        const trimmed = section.trim();
+        if (!trimmed) return null;
+
+        // You can add emoji-based styling
+        if (trimmed.startsWith('🌟')) {
+          return (
+            <div key={index} className="font-semibold text-foreground border-l-2 border-primary pl-2">
+              {trimmed}
+            </div>
+          );
         }
-        return <div key={index}>{line || ' '}</div>;
+        if (trimmed.startsWith('📘')) {
+          return <div key={index} className="pl-4">{trimmed}</div>;
+        }
+        if (trimmed.startsWith('🛠')) {
+          return <div key={index} className="pl-4 italic text-muted-foreground">{trimmed}</div>;
+        }
+        if (trimmed.startsWith('✅')) {
+          return <div key={index} className="pl-4 text-green-700">{trimmed}</div>;
+        }
+        if (trimmed.startsWith('🧠') || trimmed.startsWith('🧪')) {
+          return <div key={index} className="pl-4 text-blue-700">{trimmed}</div>;
+        }
+
+        return <div key={index}>{trimmed}</div>;
       })}
     </div>
   );
 };
+
 
 const extractTimeline = (roadmap: string[]): string => {
   const timelineRegex = /Suggested Timeline:\s*(.*)/i;
@@ -106,7 +130,7 @@ const extractTimeline = (roadmap: string[]): string => {
 
 const getRoadmapPreview = (roadmap: StoredRoadmap): string => {
   if (!roadmap.analysis.skillGaps || roadmap.analysis.skillGaps.length === 0) {
-    return roadmap.analysis.message || 'No specific skills identified.';
+    return roadmap.analysis.message || 'No specific missing skills identified.';
   }
   const firstRoadmapContent = roadmap.analysis.skillGaps[0].roadmap.join('\n');
   return firstRoadmapContent.split('\n').filter(line => line.trim() !== '').slice(0, 3).join(' ').substring(0, 150) + '...';
@@ -563,4 +587,3 @@ export default function SkillAnalyzerPage() {
     </>
   );
 }
-
