@@ -13,7 +13,6 @@ import {
   type AnalyzeSkillsInput,
   type SkillAnalysis,
 } from '@/types/ai-skills';
-import {z} from 'zod';
 
 export const analysisPrompt = ai.definePrompt({
   name: 'skillGapAnalysisPrompt',
@@ -31,11 +30,11 @@ Instructions:
 2. Compare with the user's resume and identify up to 3-5 most important missing skills.
 3. For each missing skill, generate a step-by-step multi-stage roadmap inspired by this structure:
 
-🌟 STAGE 1: FOUNDATIONS (Beginner Level) 
-Goal: Brief goal for foundational understanding
-📘Topics: List of 4-6 key topics
-🛠 Resources: Suggest specific books, course names, or software tools 
-✅ Assignments: 2-3 practical exercises
+🌟 STAGE 1: FOUNDATIONS (Beginner Level) (new line)
+Goal: Brief goal for foundational understanding (new line)
+📘Topics: List bullet points of 4-6 key topics (new line)
+🛠 Resources: Suggest specific books, course names, or software tools  (new line)
+✅ Assignments: 2-3 practical exercises (new line)
 
 🌟 STAGE 2: CORE PRINCIPLES (Intermediate Level) 
 Goal: Brief goal for intermediate mastery
