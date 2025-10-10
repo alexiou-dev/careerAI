@@ -34,11 +34,10 @@ const prompt = ai.definePrompt({
 1.  **Analyze**: Thoroughly analyze the user's resume and the job description.
 2.  **Synthesize**: Identify the most relevant skills, experiences, and qualifications from the resume that match the requirements in the job description.
 3.  **Write**: Draft a compelling {{documentType}} that is tailored to the specific job.
-    -   If it's a **Cover Letter**, it should be professional, concise, and highlight the user's fit for the role. It should have a clear introduction, body, and conclusion.
-    -   If it's a **Thank-You Email**, it should be polite, professional, and express gratitude for the interview opportunity, briefly reiterating interest in the role.
-    -   If it's a **Networking Outreach** message, it should be concise, professional, and clearly state the purpose of the outreach, whether it's for an informational interview or to inquire about opportunities.
-4.  **Formatting**: The output MUST be plain text. Do not use any markdown. Use single empty lines to separate paragraphs.
-5.  **Personalize**: Address the letter to the hiring manager if their name is available in the job description. If not, use a general professional salutation.
+4.  **Formatting**:
+    -   For a **Cover Letter**, the output MUST be plain text. Do not use markdown. Use single empty lines to separate paragraphs.
+    -   For a **Thank-You Email** or **Networking Outreach**, the output MUST be in a standard email format. It must begin with "Subject: [Your Subject Here]" on the very first line, followed by the body of the email. Use single empty lines for paragraph breaks.
+5.  **Personalize**: Address the document to the hiring manager or contact person if their name is available in the provided context. If not, use a general professional salutation (e.g., "Dear Hiring Team,").
 
 Generate the {{documentType}} based on these instructions.`,
 });
@@ -61,3 +60,4 @@ const generateDocumentFlow = ai.defineFlow(
     }
   }
 );
+
