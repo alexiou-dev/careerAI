@@ -7,6 +7,7 @@ export const preferencesOptions = [
   'Collaborative Environment',
   'Innovation and Tech Focus',
   'Company Stability',
+  'Other (please specify)',
 ] as const;
 
 export const PreferencesSchema = z.enum(preferencesOptions);
@@ -16,6 +17,16 @@ export type Preference = z.infer<typeof PreferencesSchema>;
 export const CompanyFitFormSchema = z.object({
   companyName: z.string().min(2, 'Company name must be at least 2 characters.'),
   preferences: z.array(PreferencesSchema).min(1, 'Please select at least one preference.'),
+  otherPreference: z.string().optional(),
+}).refine(data => {
+    // If 'Other' is selected, then otherPreference must not be empty.
+    if (data.preferences.includes('Other (please specify)') && !data.otherPreference?.trim()) {
+        return false;
+    }
+    return true;
+}, {
+    message: 'Please specify your "Other" preference.',
+    path: ['otherPreference'], // Path to the field that the error message will be attached to.
 });
 
 export type CompanyFitFormValues = z.infer<typeof CompanyFitFormSchema>;
