@@ -1,10 +1,6 @@
 # CareerAI: Your AI-Powered Career Assistant
 
 <p align="center">
-  <img src="https://picsum.photos/seed/career-ai-logo/600/300" alt="CareerAI Banner" data-ai-hint="futuristic office" />
-</p>
-
-<p align="center">
   <strong>Launch your dream career with smart, AI-powered tools.</strong>
 </p>
 
