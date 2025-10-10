@@ -42,3 +42,13 @@ export const AnalyzeSkillsOutputSchema = z.object({
 
 export type SkillAnalysis = z.infer<typeof AnalyzeSkillsOutputSchema>;
 
+export type StoredRoadmap = {
+  id: string;
+  name: string;
+  createdAt: string;
+  analysis: SkillAnalysis;
+  jobDescription: string;
+  priority?: 'high' | 'medium' | 'low';
+  timeline?: string;
+};
+
