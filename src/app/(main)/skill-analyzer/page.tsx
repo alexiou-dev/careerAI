@@ -51,7 +51,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sparkles, Loader2, Upload, Lightbulb, CheckCircle, X, Trash2, Eye, FileText, Pencil } from 'lucide-react';
+import { Sparkles, Loader2, Upload, Lightbulb, CheckCircle, X, Trash2, Eye, FileText, Pencil, Clock } from 'lucide-react';
 import { analyzeJobSkills } from '@/ai/flows/analyze-skills';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -83,14 +83,14 @@ export const RoadmapContent = ({ content }: { content: string }) => {
         if (line.startsWith('🌟')) {
           return <strong key={index} className="block font-semibold text-foreground">{line}</strong>;
         }
-        return <div key={index}>{line || '\u00A0'}</div>;
+        return <div key={index}>{line || ' '}</div>;
       })}
     </div>
   );
 };
 
 const extractTimeline = (roadmap: string[]): string => {
-  const timelineRegex = /Suggested Timeline:\s*(.*)/;
+  const timelineRegex = /Suggested Timeline:\s*(.*)/i;
   for (const stage of roadmap) {
     const lines = stage.split('\n');
     for (const line of lines) {
@@ -102,6 +102,7 @@ const extractTimeline = (roadmap: string[]): string => {
   }
   return '';
 };
+
 
 const getRoadmapPreview = (roadmap: StoredRoadmap): string => {
   if (!roadmap.analysis.skillGaps || roadmap.analysis.skillGaps.length === 0) {
@@ -420,16 +421,21 @@ export default function SkillAnalyzerPage() {
                   ) : (
                     <ul className="space-y-4">
                       {savedRoadmaps.map((roadmap) => {
-                          const timeline = roadmap.timeline || (roadmap.analysis.skillGaps ? extractTimeline(roadmap.analysis.skillGaps[0].roadmap) : '');
+                          const timeline = roadmap.timeline || (roadmap.analysis.skillGaps && roadmap.analysis.skillGaps.length > 0 ? extractTimeline(roadmap.analysis.skillGaps[0].roadmap) : '');
                           const preview = getRoadmapPreview(roadmap);
                           return (
                             <li key={roadmap.id} className="group rounded-md border p-4 space-y-3">
                                 <div className="flex items-start justify-between gap-2">
                                     <div className='flex-1'>
                                         <p className="font-semibold">{roadmap.name}</p>
-                                        <div className='flex items-center gap-2 mt-1 flex-wrap'>
+                                        <div className='flex items-center gap-4 mt-2 flex-wrap'>
                                             <Badge className={getPriorityBadgeColor(roadmap.priority)}>{getPriorityText(roadmap.priority)}</Badge>
-                                            {timeline && <p className="text-xs text-muted-foreground">{timeline}</p>}
+                                            {timeline && (
+                                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                    <Clock className="h-3 w-3" />
+                                                    <span>{timeline}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="flex items-center">
@@ -557,3 +563,4 @@ export default function SkillAnalyzerPage() {
     </>
   );
 }
+
