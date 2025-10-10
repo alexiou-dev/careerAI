@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -36,9 +35,6 @@ import {
   GenerateDocumentFormSchema,
   type GenerateDocumentFormValues,
   documentTypes,
-  type DocumentType,
-  MAX_FILE_SIZE,
-  ACCEPTED_FILE_TYPES,
 } from '@/types/ai-documents';
 
 
@@ -183,9 +179,17 @@ export default function AIWriterPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {documentTypes.map((type) => (
-                           <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))}
+                        {documentTypes.map((doc) => {
+                          const Icon = doc.icon;
+                          return (
+                           <SelectItem key={doc.value} value={doc.value}>
+                             <div className='flex items-center gap-2'>
+                                <Icon className="h-4 w-4 text-muted-foreground" />
+                                <span>{doc.label}</span>
+                              </div>
+                           </SelectItem>
+                        );
+                        })}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -258,3 +262,4 @@ export default function AIWriterPage() {
     </div>
   );
 }
+
