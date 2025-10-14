@@ -38,6 +38,7 @@ This project leverages a modern, robust, and scalable tech stack:
 - **UI Components**: [ShadCN UI](https://ui.shadcn.com/)
 - **Generative AI**: [Firebase Genkit](https://firebase.google.com/docs/genkit)
 - **Icons**: [Lucide React](https://lucide.dev/)
+- External APIs: Gemini, Adjuna, Google Custom Search, Jooble, Supabase
 
 ## 🚀 Getting Started
 
@@ -47,6 +48,7 @@ Follow these instructions to get a copy of the project up and running on your lo
 
 - [Node.js](https://nodejs.org/) (v18 or later recommended)
 - [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+- API keys for the external services (see below)
 
 ### Installation
 
@@ -67,14 +69,19 @@ Follow these instructions to get a copy of the project up and running on your lo
 
 1. Create a file named `.env` in the root of your project:
     ```
+    # --- AI Integrations ---
     GEMINI_API_KEY="your_gemini_api_key_here"
-    ADZUNA_APP_ID="your_adjuna_api_id_here"
-    ADZUNA_APP_KEY="your_adjuna_api_key_here"
+    # --- Google Custom Search ---
     GOOGLE_API_KEY="your_google_api_key_here"
     GOOGLE_CX=your_custom_search_engine_id_here
+    # --- Job Data Sources --
     JOOBLE_API_KEY="your_jooble_api_key_here"
-    NEXT_PUBLIC_SUPABASE_ANON_KEY="your_supabase_anon_key_here"
-    NEXT_PUBLIC_SUPABASE_URL="your_supabase_project_url"
+    ADZUNA_APP_ID="your_adjuna_api_id_here"
+    ADZUNA_APP_KEY="your_adjuna_api_key_here"
+    # --- Database & Auth ---
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrZnJpeHdwd2xueG5kYXh4Z3l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1NTM2MDEsImV4cCI6MjA3MzEyOTYwMX0.d-jj7cRrvLFZcGl57JyTmd2kkeXdBsffPE9URD8J8Yc
+    NEXT_PUBLIC_SUPABASE_URL=https://dkfrixwpwlnxndaxxgyt.supabase.co
+    # --- Optional ---
     SUPABASE_SERVICE_ROLE_KEY="your_supabase_service_key_here"
     CLIENT_ID="your_client_id_here"
 
