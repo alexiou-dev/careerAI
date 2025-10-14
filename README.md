@@ -24,8 +24,8 @@ CareerAI combines a user-friendly interface with powerful AI capabilities to giv
 | **AI Job Finder**       | Enter a role, location, and other preferences to get a curated list of relevant job postings sourced by a powerful AI agent.               |
 | **Resume Tailor**       | Upload your resume and paste a job description to have an AI generate a new, optimized version specifically tailored for that role.        |
 | **AI Writer**           | Generate compelling cover letters, thank-you emails, and networking outreach messages in seconds, based on your resume and the job.        |
-| **Interview Prep**      | Practice for interviews with an AI coach that generates role-specific questions, records your answers, and provides instant feedback.      |
-| **Skill Analyzer**      | Identify skill gaps between your resume and a job description, and receive a personalized, multi-stage learning roadmap to fill them.      |
+| **Interview Prep Coach**      | Practice for interviews with an AI coach that generates role-specific questions, records your answers, and provides instant feedback.      |
+| **Skill Gap Analyzer**      | Identify skill gaps between your resume and a job description, and receive a personalized, multi-stage learning roadmap to fill them.      |
 | **Company Fit**         | Get an AI-powered analysis of a company's culture and values to see how well it aligns with your preferences and work style.               |
 
 ## 🛠️ Tech Stack
