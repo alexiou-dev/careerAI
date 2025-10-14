@@ -32,7 +32,7 @@ CareerAI combines a user-friendly interface with powerful AI capabilities to giv
 
 This project leverages a modern, robust, and scalable tech stack:
 
-- **Framework**: [Next.js](https://nextjs.org/) (App Router)
+- **Framework**: [Next.js](https://nextjs.org/) 
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Generative AI**: [Firebase Genkit](https://firebase.google.com/docs/genkit)
