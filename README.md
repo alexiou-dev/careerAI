@@ -35,7 +35,6 @@ This project leverages a modern, robust, and scalable tech stack:
 - **Framework**: [Next.js](https://nextjs.org/) (App Router)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **UI Components**: [ShadCN UI](https://ui.shadcn.com/)
 - **Generative AI**: [Firebase Genkit](https://firebase.google.com/docs/genkit)
 - **Icons**: [Lucide React](https://lucide.dev/)
 - External APIs: Gemini, Adjuna, Google Custom Search, Jooble, Supabase
