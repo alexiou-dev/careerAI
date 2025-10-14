@@ -65,10 +65,19 @@ Follow these instructions to get a copy of the project up and running on your lo
 
 ### Configuration
 
-1. Create a file named `.env` in the root of your project.
-2. For the AI features, you will need a Google AI (Gemini) API key. Add it to your `.env` file:
+1. Create a file named `.env` in the root of your project:
     ```
     GEMINI_API_KEY="your_gemini_api_key_here"
+    ADZUNA_APP_ID="your_adjuna_api_id_here"
+    ADZUNA_APP_KEY="your_adjuna_api_key_here"
+    GOOGLE_API_KEY="your_google_api_key_here"
+    GOOGLE_CX=your_custom_search_engine_id_here
+    JOOBLE_API_KEY="your_jooble_api_key_here"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY="your_supabase_anon_key_here"
+    NEXT_PUBLIC_SUPABASE_URL="your_supabase_project_url"
+    SUPABASE_SERVICE_ROLE_KEY="your_supabase_service_key_here"
+    CLIENT_ID="your_client_id_here"
+
     ```
 
 ### Running the Development Server
