@@ -14,7 +14,7 @@
 
 CareerAI is a comprehensive, generative AI-powered web application designed to be your ultimate co-pilot in the job search and career development journey. It provides a suite of intelligent tools that streamline every step of the process, from discovering the perfect opportunity to acing the interview.
 
-## ✨ Features
+##  Features
 
 CareerAI combines a user-friendly interface with powerful AI capabilities to give you a competitive edge.
 
@@ -28,7 +28,7 @@ CareerAI combines a user-friendly interface with powerful AI capabilities to giv
 | **Skill Gap Analyzer**      | Identify skill gaps between your resume and a job description, and receive a personalized, multi-stage learning roadmap to fill them.      |
 | **Company Fit**         | Get an AI-powered analysis of a company's culture and values to see how well it aligns with your preferences and work style.               |
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 This project leverages a modern, robust, and scalable tech stack:
 
@@ -40,7 +40,7 @@ This project leverages a modern, robust, and scalable tech stack:
 - **Icons**: [Lucide React](https://lucide.dev/)
 - External APIs: Gemini, Adjuna, Google Custom Search, Jooble, Supabase
 
-## 🚀 Getting Started
+##  Getting Started
 
 Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
 
