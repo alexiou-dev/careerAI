@@ -81,8 +81,8 @@ Follow these instructions to get a copy of the project up and running on your lo
     ADZUNA_APP_KEY="your_adzuna_api_key_here"
     
     # --- Database & Auth ---
-    NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrZnJpeHdwd2xueG5kYXh4Z3l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1NTM2MDEsImV4cCI6MjA3MzEyOTYwMX0.d-jj7cRrvLFZcGl57JyTmd2kkeXdBsffPE9URD8J8Yc
-    NEXT_PUBLIC_SUPABASE_URL=https://dkfrixwpwlnxndaxxgyt.supabase.co
+    NEXT_PUBLIC_SUPABASE_ANON_KEY="your_public_anon_key"
+    NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
     
     # --- Optional ---
     SUPABASE_SERVICE_ROLE_KEY="your_supabase_service_key_here"
