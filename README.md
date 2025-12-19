@@ -37,7 +37,7 @@ This project leverages a modern, robust, and scalable tech stack:
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Generative AI**: [Firebase Genkit](https://firebase.google.com/docs/genkit)
 - **Icons**: [Lucide React](https://lucide.dev/)
-- **Database & Auth**: Supabase
+- **Database & Auth**: [Supabase](https://supabase.com/)
 - External APIs: Gemini, Adjuna, Google Custom Search, Jooble, Supabase
 
 ##  🚀 Getting Started
