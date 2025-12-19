@@ -1,4 +1,4 @@
-# CareerAI: Your AI-Powered Career Assistant
+# 🎯 CareerAI: Your AI-Powered Career Assistant
 
 <p align="center">
   <strong>Launch your dream career with smart, AI-powered tools.</strong>
@@ -14,21 +14,21 @@
 
 CareerAI is a comprehensive, generative AI-powered web application designed to be your ultimate co-pilot in the job search and career development journey. It provides a suite of intelligent tools that streamline every step of the process, from discovering the perfect opportunity to acing the interview.
 
-##  Features
+## ✨ Features
 
-CareerAI combines a user-friendly interface with powerful AI capabilities to give you a competitive edge.
+CareerAI integrates a suite of AI-driven tools into a single, streamlined platform:
 
-| Feature                 | Description                                                                                                                              |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **Job Tracker**         | Organize and manage all your job applications in one place with a drag-and-drop Kanban board.                                            |
-| **AI Job Finder**       | Enter a role, location, and other preferences to get a curated list of relevant job postings sourced by a powerful AI agent.               |
-| **Resume Tailor**       | Upload your resume and paste a job description to have an AI generate a new, optimized version specifically tailored for that role.        |
-| **AI Writer**           | Generate compelling cover letters, thank-you emails, and networking outreach messages in seconds, based on your resume and the job.        |
-| **Interview Prep Coach**      | Practice for interviews with an AI coach that generates role-specific questions, records your answers, and provides instant feedback.      |
-| **Skill Gap Analyzer**      | Identify skill gaps between your resume and a job description, and receive a personalized, multi-stage learning roadmap to fill them.      |
-| **Company Fit**         | Get an AI-powered analysis of a company's culture and values to see how well it aligns with your preferences and work style.               |
+| Feature | Description |
+|------|-----------|
+| 🗂️ **Job Tracker** | Organize and manage applications using a drag-and-drop Kanban board. |
+| 🔍 **AI Job Finder** | Discover relevant job postings using AI-powered search across multiple data sources. |
+| 📄 **Resume Tailor** | Generate role-specific resume versions optimized against job descriptions. |
+| ✍️ **AI Writer** | Instantly create cover letters, follow-ups, and outreach messages. |
+| 🎤 **Interview Prep Coach** | Practice interviews with AI-generated questions and receive structured feedback. |
+| 📊 **Skill Gap Analyzer** | Identify missing skills and receive a personalized learning roadmap. |
+| 🧭 **Company Fit Analysis** | Evaluate cultural and value alignment with prospective employers. |
 
-##  Tech Stack
+##  🛠️ Tech Stack
 
 This project leverages a modern, robust, and scalable tech stack:
 
@@ -39,15 +39,15 @@ This project leverages a modern, robust, and scalable tech stack:
 - **Icons**: [Lucide React](https://lucide.dev/)
 - External APIs: Gemini, Adjuna, Google Custom Search, Jooble, Supabase
 
-##  Getting Started
+##  🚀 Getting Started
 
 Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v18 or later recommended)
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
-- API keys for the external services (see below)
+- Node.js v18+
+- npm or yarn
+- API keys for required external services
 
 ### Installation
 
@@ -75,8 +75,8 @@ Follow these instructions to get a copy of the project up and running on your lo
     GOOGLE_CX=your_custom_search_engine_id_here
     # --- Job Data Sources --
     JOOBLE_API_KEY="your_jooble_api_key_here"
-    ADZUNA_APP_ID="your_adjuna_api_id_here"
-    ADZUNA_APP_KEY="your_adjuna_api_key_here"
+    ADZUNA_APP_ID="your_adzuna_api_id_here"
+    ADZUNA_APP_KEY="your_adzuna_api_key_here"
     # --- Database & Auth ---
     NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrZnJpeHdwd2xueG5kYXh4Z3l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1NTM2MDEsImV4cCI6MjA3MzEyOTYwMX0.d-jj7cRrvLFZcGl57JyTmd2kkeXdBsffPE9URD8J8Yc
     NEXT_PUBLIC_SUPABASE_URL=https://dkfrixwpwlnxndaxxgyt.supabase.co
