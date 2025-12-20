@@ -38,7 +38,7 @@ This project leverages a modern, robust, and scalable tech stack:
 - **Generative AI**: [Firebase Genkit](https://firebase.google.com/docs/genkit)
 - **Icons**: [Lucide React](https://lucide.dev/)
 - **Database & Auth**: [Supabase](https://supabase.com/)
-- External APIs: Gemini, Adjuna, Google Custom Search, Jooble, Supabase
+- **External APIs**: [Gemini](https://gemini.com), [Adzuna](https://www.adzuna.com/), [Google Custom Search](https://developers.google.com/custom-search/), [Jooble](https://jooble.org/)
 
 ##  🚀 Getting Started
 
@@ -88,6 +88,8 @@ Follow these instructions to get a copy of the project up and running on your lo
     # --- Optional ---
     SUPABASE_SERVICE_ROLE_KEY="your_supabase_service_key_here"
     CLIENT_ID="your_client_id_here"
+
+    # > Make sure to replace all placeholders with your own API keys and Supabase project credentials.
     ```
 
 ### Running the Development Server
