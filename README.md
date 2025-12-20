@@ -89,7 +89,7 @@ Follow these instructions to get a copy of the project up and running on your lo
     SUPABASE_SERVICE_ROLE_KEY="your_supabase_service_key_here"
     CLIENT_ID="your_client_id_here"
 
-    # > Make sure to replace all placeholders with your own API keys and Supabase project credentials.
+    > Make sure to replace all placeholders with your own API keys and Supabase project credentials.
     ```
 
 ### Running the Development Server
