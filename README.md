@@ -5,9 +5,9 @@
 </p>
 
 <p align="center">
-  <a href="#-features">Features</a> •
+  <a href="#features">Features</a> •
   <a href="#tech-stack">Tech Stack</a> •
-  <a href="#-getting-started">Getting Started</a>
+  <a href="#getting-started">Getting Started</a>
 </p>
 
 ---
