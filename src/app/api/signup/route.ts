@@ -1,19 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+/**
+ * Supabase Admin Client
+ * Creates a Supabase client with SERVICE ROLE key
+ */
 const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL!, // Supabase project URL
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // Admin service role key
 );
 
+/**
+ * POST Request handles user registration requests:
+ * - Validates request body
+ * - Checks for existing user (prevents duplicates)
+ * - Creates new user account
+ * - Returns appropriate response
+ */
 export async function POST(req: NextRequest) {
   try {
+    // Parse and validate request body
     const { email, password } = await req.json();
 
-    // Check if user exists
-    const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
+    // Check if email already exists
+    const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
 
-    if (existingUser) {
+    if (listError) {
+      return NextResponse.json({
+        success: false,
+        message: listError.message
+      });
+    }
+
+    // Check if user exists
+    const userExists = usersData.users.some(u => u.email === email);
+
+    // User-friendly error message
+    if (userExists) {
       return NextResponse.json({
         success: false,
         message: 'An account with this email already exists. Please try logging in.'
@@ -21,16 +44,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Create new user
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+    const { data, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      password,
-      email_confirm: true
+      password
     });
 
-    if (error || !data.user) {
+    if (createError || !data.user) {
       return NextResponse.json({
         success: false,
-        message: error?.message || 'Could not create account. Please try again.'
+        message: createError?.message || 'Could not create account. Please try again.'
       });
     }
 
