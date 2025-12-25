@@ -2,7 +2,6 @@
  * Account Deletion API Route
  * Flow:
  * - Authenticate request (user deleting their own account)
- * - Delete user data from application tables
  * - Delete user from auth system
  * - Return confirmation
  */
