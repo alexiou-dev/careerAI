@@ -1,3 +1,11 @@
+/**
+ * Signup API Route
+ * 
+ * User registration endpoint with:
+ * - User profile creation
+ * - Error handling 
+ * - Supabase integration for authentication and data storage
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -12,41 +20,21 @@ const supabaseAdmin = createClient(
 
 /**
  * POST Request handles user registration requests:
- * - Validates request body
- * - Checks for existing user (prevents duplicates)
+ * - Validates request 
  * - Creates new user account
  * - Returns appropriate response
  */
 export async function POST(req: NextRequest) {
-  try {
-    // Parse and validate request body
+   try {
+
+    // Parse and validate request
     const { email, password } = await req.json();
-
-    // Check if email already exists
-    const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-
-    if (listError) {
-      return NextResponse.json({
-        success: false,
-        message: listError.message
-      });
-    }
-
-    // Check if user exists
-    const userExists = usersData.users.some(u => u.email === email);
-
-    // User-friendly error message
-    if (userExists) {
-      return NextResponse.json({
-        success: false,
-        message: 'An account with this email already exists. Please try logging in.'
-      });
-    }
 
     // Create new user
     const { data, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      password
+      password,
+      email_confirm: false // Requires email verification
     });
 
     if (createError || !data.user) {
@@ -56,6 +44,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Step 4: Create User Profile in Database
+    const profileResult = await createUserProfile(data.user.id, email);
+    
+    // Log profile creation failure but don't fail signup
+    if (!profileResult.success) {
+      console.warn(`Profile creation failed for user ${data.user.id}:`, profileResult.error);
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Account created successfully. Please check your email to verify.'
@@ -63,7 +59,46 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     return NextResponse.json({
       success: false,
-      message: err.message
+      message: err.message // Supabase checks for existing user
     });
   }
+
+/**
+ * Create User Profile
+ * 
+ * Creates a profile record in the database after successful signup.
+ * This separates auth data from application-specific user data.
+ */
+async function createUserProfile(userId: string, email: string) {
+  try {
+    const { error } = await supabaseAdmin
+      .from('profiles')
+      .insert({
+        id: userId,
+        email: email,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        // Add any default profile fields here
+        avatar_url: null,
+        full_name: null,
+        preferences: {
+          theme: 'light',
+          notifications: true,
+          email_notifications: true
+        }
+      });
+
+    if (error) {
+      console.error('Failed to create user profile:', error);
+      // Don't fail signup if profile creation fails
+      // User can update profile later
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Unexpected error creating profile:', error);
+    return { success: false, error: error.message };
+  }
+ }
 }
