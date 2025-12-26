@@ -1,12 +1,14 @@
 'use client';
 
+// React hooks for state management
 import { useState } from 'react';
+// Form handling libraries
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+// UI Components
 import { Button } from '@/components/ui/button';
 import { useResumeStore } from '@/hooks/use-resume-store';
-
 import {
   Card,
   CardContent,
@@ -24,23 +26,34 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+// Icons for visual elements
 import { Sparkles, Loader2, Upload, FileText, Copy, Check, Download, FileType, Save } from 'lucide-react';
+// AI integration for resume tailoring
 import { tailorResume } from '@/ai/flows/tailor-resume';
+// Toast notifications and state management
 import { useToast } from '@/hooks/use-toast';
+// PDF and Word document generation libraries
 import jsPDF from 'jspdf';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
+// Authentication
 import { useAuth } from '@/app/(main)/auth-provider';
+// File validation constants
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB - Maximum allowed file size
+const ACCEPTED_FILE_TYPES = ['application/pdf']; // Only PDF files allowed
 
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_FILE_TYPES = ['application/pdf'];
-
+/**
+ * Form validation schema using Zod
+ * Validates both file upload and job description input
+ */
 const formSchema = z.object({
   resume: z
     .any()
+    // Validate exactly one file is uploaded
     .refine((files) => files?.length === 1, 'Resume is required.')
+    // Validate file size limit
     .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+    // Validate file type
     .refine(
       (files) => ACCEPTED_FILE_TYPES.includes(files?.[0]?.type),
       'Only .pdf files are accepted.'
@@ -48,25 +61,49 @@ const formSchema = z.object({
   jobDescription: z.string().min(50, 'Job description must be at least 50 characters.'),
 });
 
+// Type inference from Zod schema
 type ResumeTailorFormValues = z.infer<typeof formSchema>;
 
+/**
+ * Resume Tailor Page Component
+ * 
+ * Allows users to upload their existing resume and tailor it for a specific job.
+ * Features:
+ * - PDF file upload with validation
+ * - Job description input for targeting
+ * - AI-powered resume optimization
+ * - Multiple export options (PDF, Word)
+ * - Save to resume history
+ */
 export default function ResumeTailorPage() {
+  // State management
   const [tailoredResume, setTailoredResume] = useState<string | null>(null);
   const [originalJobDescription, setOriginalJobDescription] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState('');
   const [hasCopied, setHasCopied] = useState(false);
+  
+  // Hooks for toast notifications and authentication
   const { toast } = useToast();
   const { user } = useAuth(); 
+  
+  // Resume store for saving tailored resumes
   const { addResume } = useResumeStore(user?.id);
 
-
+  /**
+   * React Hook Form setup with Zod validation
+   */
   const form = useForm<ResumeTailorFormValues>({
     resolver: zodResolver(formSchema),
   });
 
+  // File input registration for react-hook-form
   const fileRef = form.register('resume');
 
+  /**
+   * Converts a File object to a Data URI (base64 string)
+   * Used for sending PDF content to the AI service
+   */
   const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -80,6 +117,10 @@ export default function ResumeTailorPage() {
     });
   };
 
+  /**
+   * Form submission handler
+   * Uploads resume PDF and job description to AI service for tailoring
+   */
   async function onSubmit(values: ResumeTailorFormValues) {
     setIsLoading(true);
     setTailoredResume(null);
@@ -87,60 +128,71 @@ export default function ResumeTailorPage() {
     try {
       const file = values.resume[0];
       const resumePdfDataUri = await fileToDataUri(file);
+      
+      // Call AI resume tailoring service
       const result = await tailorResume({
         resumePdfDataUri,
         jobDescription: values.jobDescription,
       });
+      
       setTailoredResume(result.tailoredResume);
       setOriginalJobDescription(values.jobDescription);
-   } catch (error: any) {
-        if (error.message?.includes('RATE_LIMIT_EXCEEDED')) {
-            toast({
-              variant: 'destructive',
-              title: 'API Quota Exceeded',
-              description: "You've reached the daily limit for the free tier. Please try again tomorrow.",
-            });
-        } else {
-            console.error(error);
-            toast({
-                variant: 'destructive',
-                title: 'Error tailoring resume',
-                description: 'Something went wrong. Please check your file and try again.',
-            });
-        }
+    } catch (error: any) {
+      // Handle specific API rate limiting errors
+      if (error.message?.includes('RATE_LIMIT_EXCEEDED')) {
+        toast({
+          variant: 'destructive',
+          title: 'API Quota Exceeded',
+          description: "You've reached the daily limit for the free tier. Please try again tomorrow.",
+        });
+      } else {
+        console.error(error);
+        toast({
+          variant: 'destructive',
+          title: 'Error tailoring resume',
+          description: 'Something went wrong. Please check your file and try again.',
+        });
+      }
     } finally {
       setIsLoading(false);
     }
   }
 
+  /**
+   * Copy tailored resume to clipboard
+   * Includes fallback for browsers without clipboard API
+   */
   const handleCopy = () => {
-  if (!tailoredResume) return;
+    if (!tailoredResume) return;
 
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(tailoredResume)
-      .then(() => {
-        setHasCopied(true);
-        toast({ title: "Copied to clipboard!" });
-        setTimeout(() => setHasCopied(false), 2000);
-      })
-      .catch((err) => {
-        console.error("Failed to copy text: ", err);
-        toast({
-          variant: "destructive",
-          title: "Copy failed",
-          description: "Unable to copy text to clipboard.",
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(tailoredResume)
+        .then(() => {
+          setHasCopied(true);
+          toast({ title: "Copied to clipboard!" });
+          setTimeout(() => setHasCopied(false), 2000);
+        })
+        .catch((err) => {
+          console.error("Failed to copy text: ", err);
+          toast({
+            variant: "destructive",
+            title: "Copy failed",
+            description: "Unable to copy text to clipboard.",
+          });
         });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Clipboard not supported",
+        description: "Your browser does not support the clipboard API.",
       });
-  } else {
-    toast({
-      variant: "destructive",
-      title: "Clipboard not supported",
-      description: "Your browser does not support the clipboard API.",
-    });
-  }
-};
+    }
+  };
 
-  
+  /**
+   * Download tailored resume as PDF
+   * Uses jsPDF library for PDF generation
+   */
   const handleDownloadPdf = () => {
     if (tailoredResume) {
       try {
@@ -157,39 +209,48 @@ export default function ResumeTailorPage() {
         const margin = 15;
         let y = margin;
         
+        // Split text to fit within page width
         const lines = doc.splitTextToSize(tailoredResume, doc.internal.pageSize.width - margin * 2);
 
+        // Add text line by line with page breaks
         lines.forEach((line: string) => {
-            if (y + 5 > pageHeight - margin) {
-                doc.addPage();
-                y = margin;
-            }
-            doc.text(line, margin, y);
-            y += 5;
+          if (y + 5 > pageHeight - margin) {
+            doc.addPage();
+            y = margin;
+          }
+          doc.text(line, margin, y);
+          y += 5;
         });
 
         doc.save('tailored-resume.pdf');
         toast({ title: "Downloading PDF..." });
       } catch(e) {
-        console.error("Failed to generate PDF", e)
+        console.error("Failed to generate PDF", e);
         toast({
           variant: "destructive",
           title: "Error generating PDF",
           description: "Something went wrong while creating the PDF.",
-        })
+        });
       }
     }
   };
 
+  /**
+   * Download tailored resume as Word document
+   * Uses docx library for Word document generation
+   */
   const handleDownloadWord = () => {
     if (tailoredResume) {
       try {
         const sections: (Paragraph | TextRun)[] = [];
         const lines = tailoredResume.split('\n');
+        
+        // Parse resume text into Word document structure
         lines.forEach(line => {
           if (line.trim() === '') {
             sections.push(new Paragraph(""));
           } else if (line.startsWith('• ')) {
+            // Handle bullet points
             sections.push(new Paragraph({
               text: line.substring(2),
               bullet: {
@@ -197,16 +258,19 @@ export default function ResumeTailorPage() {
               }
             }));
           } else if (line === line.toUpperCase() && line.length > 2) {
-             sections.push(new Paragraph({
+            // Handle section headers (all caps)
+            sections.push(new Paragraph({
               children: [new TextRun({ text: line, bold: true })],
               heading: HeadingLevel.HEADING_1,
               spacing: { after: 120 }
             }));
           } else {
-             sections.push(new Paragraph(line));
+            // Handle regular text
+            sections.push(new Paragraph(line));
           }
         });
 
+        // Create Word document with custom styling
         const doc = new Document({
           sections: [{
             children: sections as Paragraph[],
@@ -228,6 +292,7 @@ export default function ResumeTailorPage() {
           }
         });
 
+        // Generate and download Word file
         Packer.toBlob(doc).then(blob => {
           saveAs(blob, "tailored-resume.docx");
           toast({ title: "Downloading Word document..." });
@@ -243,11 +308,18 @@ export default function ResumeTailorPage() {
     }
   };
 
+  /**
+   * Save tailored resume to user's resume history
+   * Stores in resume store for later retrieval
+   */
   const handleSaveResume = () => {
     if (tailoredResume && originalJobDescription) {
+      // Create default name from job description
       const defaultName = `Resume for "${originalJobDescription.substring(0, 40)}..."`;
       addResume({
-        name: defaultName, tailoredResume, jobDescription: originalJobDescription,
+        name: defaultName, 
+        tailoredResume, 
+        jobDescription: originalJobDescription,
         title: ''
       });
       toast({ title: "Resume saved successfully!" });
@@ -260,9 +332,19 @@ export default function ResumeTailorPage() {
     }
   };
 
-
   return (
+    {/* 
+      MAIN LAYOUT CONTAINER
+      - Uses CSS Grid for responsive two-column layout
+      - Left: Input form, Right: Preview/output
+    */}
     <div className="grid gap-8 md:grid-cols-2">
+      
+      {/* 
+        LEFT COLUMN: INPUT FORM CARD
+        - Contains file upload and job description form
+        - Users input their existing resume and target job details
+      */}
       <Card>
         <CardHeader>
           <CardTitle>Tailor Your Resume</CardTitle>
@@ -273,6 +355,14 @@ export default function ResumeTailorPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              
+              {/* 
+                FILE UPLOAD FIELD
+                - Accepts only PDF files (accept=".pdf")
+                - Custom styled file input with label as button
+                - Shows selected file name
+                - Includes validation for file size and type
+              */}
               <FormField
                 control={form.control}
                 name="resume"
@@ -281,6 +371,7 @@ export default function ResumeTailorPage() {
                     <FormLabel>Your Resume (PDF)</FormLabel>
                     <FormControl>
                       <div>
+                        {/* Hidden actual file input */}
                         <Input
                           type="file"
                           accept=".pdf"
@@ -291,20 +382,30 @@ export default function ResumeTailorPage() {
                             setFileName(e.target.files?.[0]?.name || '');
                           }}
                           id="resume-upload"
+                          aria-label="Upload resume PDF"
                         />
-                         <label
+                        {/* Custom styled file upload button */}
+                        <label
                           htmlFor="resume-upload"
                           className="flex h-10 w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground ring-offset-background cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                          aria-label="Choose PDF file"
                         >
                           <Upload className="h-4 w-4" />
                           <span className='truncate'>{fileName || 'Choose a PDF file'}</span>
                         </label>
                       </div>
                     </FormControl>
+                    {/* Validation error messages */}
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
+              {/* 
+                JOB DESCRIPTION TEXTAREA
+                - Placeholder guides user to paste full job description
+                - Validates minimum 50 characters
+              */}
               <FormField
                 control={form.control}
                 name="jobDescription"
@@ -316,13 +417,25 @@ export default function ResumeTailorPage() {
                         placeholder="Paste the full job description here..."
                         className="min-h-[200px]"
                         {...field}
+                        aria-label="Job description for resume tailoring"
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={isLoading} className="w-full">
+              
+              {/* 
+                SUBMIT BUTTON
+                - disabled={isLoading}: Disabled during API call
+                - Triggers resume tailoring process
+              */}
+              <Button 
+                type="submit" 
+                disabled={isLoading} 
+                className="w-full"
+                aria-label="Tailor resume"
+              >
                 {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -334,58 +447,104 @@ export default function ResumeTailorPage() {
           </Form>
         </CardContent>
       </Card>
+      
+      {/* 
+        RIGHT COLUMN: TAILORED RESUME PREVIEW
+        - Preview area for AI-tailored resume
+        - Contains action buttons for save/copy/download
+      */}
       <Card className="flex flex-col">
         <CardHeader>
-            <div className='flex justify-between items-start'>
-                <div>
-                    <CardTitle>Tailored Resume</CardTitle>
-                    <CardDescription>
-                    Your AI-optimized resume will appear here.
-                    </CardDescription>
-                </div>
-                 {tailoredResume && (
-                    <div className="flex items-center gap-1">
-                      <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={handleSaveResume}
-                          aria-label="Save resume"
-                      >
-                          <Save className="h-4 w-4" />
-                      </Button>
-                      <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={handleCopy}
-                          aria-label="Copy resume"
-                      >
-                          {hasCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                      <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={handleDownloadPdf}
-                          aria-label="Download resume as PDF"
-                      >
-                         <Download className="h-4 w-4" />
-                      </Button>
-                       <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={handleDownloadWord}
-                          aria-label="Download resume as Word"
-                      >
-                         <FileType className="h-4 w-4" />
-                      </Button>
-                    </div>
-                 )}
+          {/* 
+            HEADER WITH ACTION BUTTONS CONTAINER
+            - Buttons only shown when tailoredResume exists
+          */}
+          <div className='flex justify-between items-start'>
+            {/* Title and Description */}
+            <div>
+              <CardTitle>Tailored Resume</CardTitle>
+              <CardDescription>
+                Your AI-optimized resume will appear here.
+              </CardDescription>
             </div>
+            
+            {/* 
+              ACTION BUTTONS
+              - Only displayed when tailoredResume exists
+            */}
+            {tailoredResume && (
+              <div className="flex items-center gap-1">
+                
+                {/* 
+                  SAVE RESUME BUTTON
+                  - handleSaveResume: Saves to user's resume history
+                */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleSaveResume}
+                  aria-label="Save tailored resume to history"
+                >
+                  <Save className="h-4 w-4" />
+                </Button>
+                
+                {/* 
+                  COPY BUTTON
+                  - handleCopy: Copies resume text to clipboard
+                  - Conditional icon: Check mark when copied, Copy icon otherwise
+                  - Visual feedback for copy action
+                */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleCopy}
+                  aria-label="Copy tailored resume to clipboard"
+                >
+                  {hasCopied ? (
+                    <Check className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+                
+                {/* 
+                  DOWNLOAD PDF BUTTON
+                  - handleDownloadPdf: Generates and downloads PDF
+                */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleDownloadPdf}
+                  aria-label="Download tailored resume as PDF"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+                
+                {/* 
+                  DOWNLOAD WORD BUTTON
+                  - handleDownloadWord: Generates and downloads .docx
+                  - FileType icon: Represents Word/document file
+                */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleDownloadWord}
+                  aria-label="Download tailored resume as Word document"
+                >
+                  <FileType className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
+        
         <CardContent className="flex-1 flex flex-col">
+          
+          {/* LOADING STATE*/}
           {isLoading && (
             <div className="space-y-2 flex-1 animate-pulse">
               <div className="h-4 w-3/4 rounded bg-muted"></div>
@@ -396,69 +555,99 @@ export default function ResumeTailorPage() {
               <div className="h-4 w-full rounded bg-muted"></div>
             </div>
           )}
+          
+          {/* 
+            TAILORED RESUME DISPLAY
+            - Custom CSS styling for resume-like appearance
+            - Fixed height container with scroll overflow
+            - Formatted as a realistic resume document
+          */}
           {tailoredResume && (
-  <div className="relative flex-1 w-full h-[520px] overflow-hidden rounded-md border bg-muted/30">
-    <div className="absolute inset-0 overflow-y-auto p-6">
-      <div
-        className="mx-auto bg-white shadow-sm rounded-sm border border-gray-200"
-        style={{
-          width: "100%",
-          maxWidth: "100%",
-          minHeight: "100%",
-          padding: "28px",
-          fontFamily: "'Calibri', 'Helvetica', sans-serif",
-          fontSize: "11pt",
-          lineHeight: "1.5",
-          color: "#000",
-          whiteSpace: "pre-wrap",
-        }}
-        dangerouslySetInnerHTML={{
-          __html: tailoredResume
-            .split('\n')
-            .map((line, i) => {
-              const trimmed = line.trim();
+            <div className="relative flex-1 w-full h-[520px] overflow-hidden rounded-md border bg-muted/30">
+              {/* Scrollable container for resume content */}
+              <div className="absolute inset-0 overflow-y-auto p-6">
+                {/* 
+                  RESUME DOCUMENT SIMULATION
+                  - White background with subtle shadow and border
+                  - Custom font styling and spacing
+                */}
+                <div
+                  className="mx-auto bg-white shadow-sm rounded-sm border border-gray-200"
+                  style={{
+                    width: "100%",
+                    maxWidth: "100%",
+                    minHeight: "100%",
+                    padding: "28px", // Standard resume margins
+                    fontFamily: "'Calibri', 'Helvetica', sans-serif", // Common resume fonts
+                    fontSize: "11pt", // Standard resume font size
+                    lineHeight: "1.5", // Readable line spacing
+                    color: "#000", // Black text for print compatibility
+                    whiteSpace: "pre-wrap", // Preserve line breaks
+                  }}
+                  // Parse and format resume text with HTML
+                  dangerouslySetInnerHTML={{
+                    __html: tailoredResume
+                      .split('\n')
+                      .map((line, i) => {
+                        const trimmed = line.trim();
 
-              // === HEADER: NAME, JOB TITLE, CONTACT INFO ===
-              if (i < 5 && (
-                  /^[A-Z][a-z]+\s[A-Z][a-z]+$/.test(trimmed) || 
-                  trimmed.toLowerCase().includes("linkedin") ||
-                  trimmed.toLowerCase().includes("github") ||
-                  trimmed.includes("@")
-              )) {
-                return `<div style="text-align:center;font-weight:bold;margin-bottom:2px;">${trimmed}</div>`;
-              }
+                        {/* 
+                          FORMATTING LOGIC:
+                          1. HEADER LINES (name, contact info) - Centered, bold
+                          2. SECTION HEADERS (all caps) - Bold, with underline
+                          3. TITLES WITH DATES - Two-column layout
+                          4. BULLET POINTS - Indented with bullet symbol
+                          5. DEFAULT TEXT - Regular paragraph spacing
+                        */}
+                        
+                        // Header: Name, job title, contact info (first 5 lines)
+                        if (i < 5 && (
+                          /^[A-Z][a-z]+\s[A-Z][a-z]+$/.test(trimmed) || // Name pattern
+                          trimmed.toLowerCase().includes("linkedin") ||
+                          trimmed.toLowerCase().includes("github") ||
+                          trimmed.includes("@") // Email address
+                        )) {
+                          return `<div style="text-align:center;font-weight:bold;margin-bottom:2px;">${trimmed}</div>`;
+                        }
 
-              // === SECTION HEADERS (ALL CAPS) ===
-              if (/^[A-Z\s]{3,}$/.test(trimmed)) {
-                return `<div style="font-weight:bold;font-size:12pt;margin-top:18px;margin-bottom:6px;border-bottom:1px solid #000;padding-bottom:2px;">${trimmed}</div>`;
-              }
+                        // Section Headers: All caps text (3+ characters)
+                        if (/^[A-Z\s]{3,}$/.test(trimmed)) {
+                          return `<div style="font-weight:bold;font-size:12pt;margin-top:18px;margin-bottom:6px;border-bottom:1px solid #000;padding-bottom:2px;">${trimmed}</div>`;
+                        }
 
-              // === TITLES WITH DATES OR LOCATIONS (LEFT–RIGHT SPLIT) ===
-              if (trimmed.match(/(—|-|–)/) && trimmed.match(/\d{4}/)) {
-                const [left, right] = trimmed.split(/—|–|-/);
-                return `
-                  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-top:6px;">
-                    <div style="font-weight:bold;">${left.trim()}</div>
-                    <div style="font-weight:normal;">${right.trim()}</div>
-                  </div>
-                `;
-              }
+                        // Titles with Dates: Job titles with date ranges (split layout)
+                        if (trimmed.match(/(—|-|–)/) && trimmed.match(/\d{4}/)) {
+                          const [left, right] = trimmed.split(/—|–|-/);
+                          return `
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-top:6px;">
+                              <div style="font-weight:bold;">${left.trim()}</div>
+                              <div style="font-weight:normal;">${right.trim()}</div>
+                            </div>
+                          `;
+                        }
 
-              // === BULLET POINTS ===
-              if (trimmed.startsWith("•")) {
-                return `<div style="margin-left:18px;text-indent:-10px;">${trimmed}</div>`;
-              }
+                        // Bullet Points: Lines starting with •
+                        if (trimmed.startsWith("•")) {
+                          return `<div style="margin-left:18px;text-indent:-10px;">${trimmed}</div>`;
+                        }
 
-              // === DEFAULT TEXT ===
-              return `<div style="margin-top:4px;">${trimmed}</div>`;
-            })
-            .join("")
-        }}
-      />
-    </div>
-  </div>
-)}
+                        // Default Text: Regular paragraphs
+                        return `<div style="margin-top:4px;">${trimmed}</div>`;
+                      })
+                      .join("") // Combine all formatted lines
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
+          {/* 
+            EMPTY STATE
+            - Shown when no tailored resume and not loading
+            - Centered content with dashed border
+            - FileText icon: Indicates document/file
+            - Instructional text
+          */}
           {!isLoading && !tailoredResume && (
             <div className="flex flex-1 flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
               <FileText className="h-10 w-10 text-muted-foreground" />
@@ -473,3 +662,18 @@ export default function ResumeTailorPage() {
   );
 }
 
+{/* 
+div (main grid container)
+├── Card (Left - Input Form)
+│   ├── File Upload Area
+│   │   ├── Hidden file input
+│   │   └── Custom styled upload button
+│   ├── Job Description Textarea
+│   └── Submit Button
+└── Card (Right - Output Preview)
+    ├── Header with Action Buttons
+    └── Content Area with 3 States
+        ├── Loading Skeletons
+        ├── Formatted Resume Display
+        └── Empty State
+*/}
