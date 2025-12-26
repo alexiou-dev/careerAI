@@ -1,6 +1,5 @@
 'use client';
 
-
 import { useState, useRef } from 'react';
 // Form handling libraries
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
@@ -403,8 +402,15 @@ function GenerateResumeTab() {
   };
 
   return (
+    {/* 
+    MAIN LAYOUT CONTAINER
+    - Uses CSS Grid for responsive two-column layout
+  */}
     <div className="grid gap-8 md:grid-cols-2">
-      {/* Left Column: Input Form */}
+      {/* 
+      LEFT COLUMN: INPUT FORM CARD
+      - Contains all form fields for resume data entry
+    */}
       <Card className="h-full">
         <CardHeader>
           <CardTitle>Generate from Scratch</CardTitle>
@@ -413,9 +419,16 @@ function GenerateResumeTab() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+        {/* 
+          REACT HOOK FORM WRAPPER
+          - Provides form context to all child form fields
+          - form.handleSubmit: Handles validation and submission
+        */}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Personal Details Section */}
+              {/* 
+              SECTION 1: PERSONAL DETAILS
+            */}
               <h3 className="text-lg font-semibold">Personal Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField 
@@ -549,9 +562,17 @@ function GenerateResumeTab() {
                 />
               </div>
 
+              {/* 
+              VISUAL SEPARATOR
+              - Creates clear visual distinction between form sections
+            */}
               <Separator />
               
-              {/* Professional Summary Section */}
+              {/* 
+              SECTION 2: PROFESSIONAL SUMMARY
+              - Single textarea field for career summary/objective
+              - Larger input area for paragraph-length content
+            */}
               <h3 className="text-lg font-semibold">Summary</h3>
               <FormField 
                 control={form.control} 
@@ -573,11 +594,26 @@ function GenerateResumeTab() {
 
               <Separator />
               
-              {/* Work Experience Section (Dynamic Array) */}
+              {/* 
+              SECTION 3: WORK EXPERIENCE (DYNAMIC ARRAY)
+              - Uses useFieldArray for dynamic list of work experiences
+              - Each experience is a bordered container
+              - Remove button positioned absolutely in top-right corner
+              */}
               <h3 className="text-lg font-semibold">Work Experience</h3>
+              {/* 
+              DYNAMIC FIELD LOOP
+              - workFields.map(): Renders each work experience entry
+              - key={item.id}: Unique ID from react-hook-form
+            */}
               {workFields.map((item, index) => (
                 <div key={item.id} className="space-y-4 p-4 border rounded-md relative">
+                  {/* 
+                  EXPERIENCE FIELDS GRID
+                  - Nested responsive grid for experience details
+                */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Job Title Field */}
                     <FormField 
                       control={form.control} 
                       name={`workExperience.${index}.jobTitle`} 
@@ -591,6 +627,7 @@ function GenerateResumeTab() {
                         </FormItem>
                       )} 
                     />
+                    {/* Company Field */}
                     <FormField 
                       control={form.control} 
                       name={`workExperience.${index}.company`} 
@@ -604,6 +641,7 @@ function GenerateResumeTab() {
                         </FormItem>
                       )} 
                     />
+                    {/* Location Field */}
                     <FormField 
                       control={form.control} 
                       name={`workExperience.${index}.location`} 
@@ -617,7 +655,9 @@ function GenerateResumeTab() {
                         </FormItem>
                       )} 
                     />
+                    {/* DATE FIELDS CONTAINE */}
                     <div className="grid grid-cols-1 gap-4 md:col-span-2 md:grid-cols-2">
+                      {/* Start Date - Custom DatePickerField component */}
                       <FormField 
                         control={form.control} 
                         name={`workExperience.${index}.startDate`} 
@@ -625,6 +665,7 @@ function GenerateResumeTab() {
                           <DatePickerField field={field} label="Start Date" />
                         )} 
                       />
+                      {/* End Date - Custom DatePickerField component */}
                       <FormField 
                         control={form.control} 
                         name={`workExperience.${index}.endDate`} 
@@ -634,6 +675,12 @@ function GenerateResumeTab() {
                       />
                     </div>
                   </div>
+                  {/* 
+                  RESPONSIBILITIES TEXTAREA
+                  - Uses custom BulletedTextarea component
+                  - Automatically formats bullet points
+                  - Larger area for detailed job descriptions
+                */}
                   <FormField 
                     control={form.control} 
                     name={`workExperience.${index}.responsibilities`} 
@@ -650,7 +697,11 @@ function GenerateResumeTab() {
                       </FormItem>
                     )} 
                   />
-                  {/* Remove Experience Button */}
+                  {/* 
+                  DELETE BUTTON
+                  - variant="destructive": Red color for destructive action
+                  - onClick triggers removeWork with current index
+                */}
                   <Button 
                     type="button" 
                     variant="destructive" 
@@ -663,7 +714,10 @@ function GenerateResumeTab() {
                   </Button>
                 </div>
               ))}
-              {/* Add Experience Button */}
+              {/* 
+              ADD EXPERIENCE BUTTON
+              - appendWork: Adds new empty work experience object
+            */}
               <Button 
                 type="button" 
                 variant="outline" 
@@ -1010,7 +1064,10 @@ function GenerateResumeTab() {
             </div>
           )}
           
-          {/* Generated Resume Display */}
+          {/* 
+          GENERATED RESUME DISPLAY
+          - Read-only textarea for resume preview
+        */}
           {generatedResume && (
             <Textarea
               readOnly
@@ -1020,7 +1077,13 @@ function GenerateResumeTab() {
             />
           )}
           
-          {/* Empty State */}
+          {/* 
+          EMPTY STATE
+          - Shown when no resume and not loading
+          - Centered content with dashed border
+          - Sparkles icon: Indicates AI/magic
+          - Instructional text
+        */}
           {!isLoading && !generatedResume && (
             <div className="flex flex-1 flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-8 text-center">
               <Sparkles className="h-10 w-10 text-muted-foreground" />
