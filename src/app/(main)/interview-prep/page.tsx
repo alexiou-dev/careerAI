@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+// Form handling libraries
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+// AI interview preparation services
 import {
     generateInterviewQuestions,
     getExampleAnswer,
@@ -10,6 +12,7 @@ import {
     getInterviewScore,
     analyzeAndBankQuestion,
 } from '@/ai/flows/interview-prep';
+// Type definitions and validation schema
 import {
   InterviewPrepFormSchema,
   type InterviewPrepFormValues,
@@ -18,39 +21,60 @@ import {
   type ChatMessage,
   type BankedQuestion,
 } from '@/types/ai-interview';
+// Toast notifications for user feedback
 import { useToast } from '@/hooks/use-toast';
+// UI Components for interview interface
 import { InterviewSetup } from '@/components/interview-prep/InterviewSidebar';
 import { InterviewChat } from '@/components/interview-prep/InterviewChat';
 import { QuestionBankTab } from '@/components/interview-prep/QuestionBankTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-
+// Local storage keys for data persistence
 const INTERVIEW_STORAGE_KEY = 'interview-history';
 const QUESTION_BANK_STORAGE_KEY = 'question-bank';
 
+/**
+ * Interview Preparation Page Component
+ * 
+ * Interactive AI-powered interview simulation with features:
+ * - Dynamic interview question generation based on job role/description
+ * - Speech-to-text for natural answer recording
+ * - AI feedback and scoring system
+ * - Question banking for future practice
+ * - Interview history and replay capabilities
+ */
 export default function InterviewPrepPage() {
+  // State management for interviews and questions
   const [interviews, setInterviews] = useState<StoredInterview[]>([]);
   const [questionBank, setQuestionBank] = useState<BankedQuestion[]>([]);
   const [activeInterview, setActiveInterview] = useState<StoredInterview | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [userInput, setUserInput] = useState('');
+  
+  // Loading and state flags
   const [isLoading, setIsLoading] = useState(false);
   const [isAnswering, setIsAnswering] = useState(false);
   const [isGettingFeedback, setIsGettingFeedback] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  
   const { toast } = useToast();
   
+  // Ref for SpeechRecognition API
   const recognitionRef = useRef<any>(null);
 
+  /**
+   * Initialize Speech Recognition API
+   * Sets up browser speech-to-text capabilities
+   * Only runs on client-side
+   */
   useEffect(() => {
-    // SpeechRecognition setup
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
         recognitionRef.current = new SpeechRecognition();
         recognitionRef.current.continuous = true;
         recognitionRef.current.interimResults = true;
 
+        // Handle speech recognition results
         recognitionRef.current.onresult = (event: any) => {
             let interimTranscript = '';
             let finalTranscript = '';
@@ -61,17 +85,27 @@ export default function InterviewPrepPage() {
                     interimTranscript += event.results[i][0].transcript;
                 }
             }
+            // Append recognized speech to user input
             setUserInput(prev => prev + finalTranscript + interimTranscript);
         };
         
+        // Handle speech recognition errors
         recognitionRef.current.onerror = (event: any) => {
             console.error("Speech recognition error", event.error);
-            toast({ variant: 'destructive', title: 'Speech Recognition Error', description: event.error });
+            toast({ 
+              variant: 'destructive', 
+              title: 'Speech Recognition Error', 
+              description: event.error 
+            });
             setIsRecording(false);
         };
     }
   }, [toast]);
 
+  /**
+   * Load persisted data from localStorage on component mount
+   * Retrieves interview history and question bank
+   */
   useEffect(() => {
     try {
       const storedInterviews = localStorage.getItem(INTERVIEW_STORAGE_KEY);
@@ -87,11 +121,19 @@ export default function InterviewPrepPage() {
     }
   }, []);
   
+  /**
+   * React Hook Form setup with Zod validation
+   * Manages interview setup form state
+   */
   const form = useForm<InterviewPrepFormValues>({
     resolver: zodResolver(InterviewPrepFormSchema),
     defaultValues: { jobRole: '', jobDescription: '' },
   });
 
+  /**
+   * Helper function to save data to localStorage
+   * Wrapped in try-catch to handle storage errors
+   */
   const saveToStorage = useCallback((key: string, data: any) => {
     try {
         localStorage.setItem(key, JSON.stringify(data));
@@ -100,6 +142,10 @@ export default function InterviewPrepPage() {
     }
   }, []);
   
+  /**
+   * Save interviews to state and localStorage
+   * Updates active interview if provided
+   */
   const saveInterviews = useCallback((updatedInterviews: StoredInterview[], newActiveInterview?: StoredInterview | null) => {
     setInterviews(updatedInterviews);
     if (newActiveInterview !== undefined) {
@@ -108,12 +154,18 @@ export default function InterviewPrepPage() {
     saveToStorage(INTERVIEW_STORAGE_KEY, updatedInterviews);
   }, [saveToStorage]);
 
+  /**
+   * Save question bank to state and localStorage
+   */
   const saveQuestionBank = useCallback((updatedBank: BankedQuestion[]) => {
       setQuestionBank(updatedBank);
       saveToStorage(QUESTION_BANK_STORAGE_KEY, updatedBank);
   }, [saveToStorage]);
 
-
+  /**
+   * Convert file to Data URI for API transmission
+   * Used for resume PDF processing
+   */
   const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -127,6 +179,11 @@ export default function InterviewPrepPage() {
     });
   };
 
+  /**
+   * Start a new interview session
+   * Generates questions based on job role and description
+   * Can start with a single question for practice
+   */
   const handleStartInterview = async (values: InterviewPrepFormValues, singleQuestion?: string) => {
     setIsLoading(true);
     setActiveInterview(null);
@@ -150,13 +207,18 @@ export default function InterviewPrepPage() {
             questions = result.questions;
         }
 
+      // Create new interview object
       const newInterview: StoredInterview = {
         id: `interview_${Date.now()}`,
         name: singleQuestion ? `Practice: ${values.jobRole}` : `${values.jobRole} Interview`,
         jobRole: values.jobRole,
         jobDescription: values.jobDescription,
         resumePdfDataUri: resumePdfDataUri,
-        questions: questions.map(q => ({ question: q, userAnswer: '', modelAnswer: ''})),
+        questions: questions.map(q => ({ 
+          question: q, 
+          userAnswer: '', 
+          modelAnswer: ''
+        })),
         feedback: '',
         score: undefined,
         createdAt: new Date().toISOString(),
@@ -166,7 +228,11 @@ export default function InterviewPrepPage() {
       const updatedInterviews = [newInterview, ...interviews];
       
       setCurrentQuestionIndex(0);
-      setMessages([{ role: 'bot', content: newInterview.questions[0].question, isQuestion: true }]);
+      setMessages([{ 
+        role: 'bot', 
+        content: newInterview.questions[0].question, 
+        isQuestion: true 
+      }]);
       saveInterviews(updatedInterviews, newInterview);
       
       form.reset();
@@ -190,6 +256,10 @@ export default function InterviewPrepPage() {
     }
   };
   
+  /**
+   * Restart a previous interview for practice
+   * Creates a copy of the interview with fresh answers
+   */
   const handlePracticeAgain = (interviewToRetry: StoredInterview) => {
     if (!interviewToRetry) return;
 
@@ -199,7 +269,11 @@ export default function InterviewPrepPage() {
       jobRole: interviewToRetry.jobRole,
       jobDescription: interviewToRetry.jobDescription,
       resumePdfDataUri: interviewToRetry.resumePdfDataUri,
-      questions: interviewToRetry.questions.map(q => ({ question: q.question, userAnswer: '', modelAnswer: ''})),
+      questions: interviewToRetry.questions.map(q => ({ 
+        question: q.question, 
+        userAnswer: '', 
+        modelAnswer: ''
+      })),
       feedback: '',
       score: undefined,
       createdAt: new Date().toISOString(),
@@ -212,7 +286,11 @@ export default function InterviewPrepPage() {
     handleSelectInterview(newInterview);
   };
 
- const handleSelectInterview = (interview: StoredInterview) => {
+  /**
+   * Load and display a previously saved interview
+   * Reconstructs chat messages from stored interview data
+   */
+  const handleSelectInterview = (interview: StoredInterview) => {
     setActiveInterview(interview);
 
     const reconstructedMessages: ChatMessage[] = [];
@@ -222,13 +300,24 @@ export default function InterviewPrepPage() {
       for (let i = 0; i < interview.questions.length; i++) {
         const q = interview.questions[i];
         
-        reconstructedMessages.push({ role: 'bot', content: q.question, isQuestion: true });
+        reconstructedMessages.push({ 
+          role: 'bot', 
+          content: q.question, 
+          isQuestion: true 
+        });
         
         if (q.userAnswer) {
-          reconstructedMessages.push({ role: 'user', content: q.userAnswer });
+          reconstructedMessages.push({ 
+            role: 'user', 
+            content: q.userAnswer 
+          });
           nextQuestionIndex = i + 1;
         } else if (q.modelAnswer) {
-          reconstructedMessages.push({ role: 'bot', content: q.modelAnswer, isModelAnswer: true });
+          reconstructedMessages.push({ 
+            role: 'bot', 
+            content: q.modelAnswer, 
+            isModelAnswer: true 
+          });
           nextQuestionIndex = i + 1;
         } else {
           break;
@@ -237,26 +326,44 @@ export default function InterviewPrepPage() {
     }
 
     if (interview.feedback) {
-        reconstructedMessages.push({ role: 'bot', content: interview.feedback, isFeedback: true });
+        reconstructedMessages.push({ 
+          role: 'bot', 
+          content: interview.feedback, 
+          isFeedback: true 
+        });
     }
 
     setMessages(reconstructedMessages);
 
-    if (nextQuestionIndex >= interview.questions.length && interview.questions.every(q => q.userAnswer || q.modelAnswer)) {
+    if (nextQuestionIndex >= interview.questions.length && 
+        interview.questions.every(q => q.userAnswer || q.modelAnswer)) {
       setCurrentQuestionIndex(interview.questions.length);
     } else {
       setCurrentQuestionIndex(nextQuestionIndex);
     }
   };
 
+  /**
+   * Update active interview in both state and localStorage
+   */
   const updateActiveInterviewInStorage = (updatedInterview: StoredInterview) => {
-    const updatedInterviews = interviews.map(i => i.id === updatedInterview.id ? updatedInterview : i);
+    const updatedInterviews = interviews.map(i => 
+      i.id === updatedInterview.id ? updatedInterview : i
+    );
     saveInterviews(updatedInterviews, updatedInterview);
   };
   
-    const handleToggleRecording = () => {
+  /**
+   * Toggle speech recognition recording
+   * Starts/stops voice-to-text transcription
+   */
+  const handleToggleRecording = () => {
     if (!recognitionRef.current) {
-        toast({variant: 'destructive', title: 'Unsupported Browser', description: "Speech recognition is not supported in your browser."})
+        toast({
+          variant: 'destructive', 
+          title: 'Unsupported Browser', 
+          description: "Speech recognition is not supported in your browser."
+        });
         return;
     };
     if (isRecording) {
@@ -268,6 +375,10 @@ export default function InterviewPrepPage() {
     }
   };
 
+  /**
+   * Move to the next question in the interview
+   * Saves current answer and progresses interview
+   */
   const handleNextQuestion = () => {
     if (!activeInterview) return;
     
@@ -278,10 +389,16 @@ export default function InterviewPrepPage() {
 
     const currentQuestion = activeInterview.questions[currentQuestionIndex];
     if (userInput.trim()) {
-        const updatedQuestion: InterviewQuestion = { ...currentQuestion, userAnswer: userInput };
+        const updatedQuestion: InterviewQuestion = { 
+          ...currentQuestion, 
+          userAnswer: userInput 
+        };
         const updatedQuestions = [...activeInterview.questions];
         updatedQuestions[currentQuestionIndex] = updatedQuestion;
-        const updatedInterview: StoredInterview = { ...activeInterview, questions: updatedQuestions };
+        const updatedInterview: StoredInterview = { 
+          ...activeInterview, 
+          questions: updatedQuestions 
+        };
 
         updateActiveInterviewInStorage(updatedInterview);
         setMessages(prev => [...prev, {role: 'user', content: userInput}]);
@@ -293,12 +410,20 @@ export default function InterviewPrepPage() {
     const nextIndex = currentQuestionIndex + 1;
     if (nextIndex < activeInterview.questions.length) {
       setCurrentQuestionIndex(nextIndex);
-      setMessages(prev => [...prev, {role: 'bot', content: activeInterview.questions[nextIndex].question, isQuestion: true}]);
+      setMessages(prev => [...prev, {
+        role: 'bot', 
+        content: activeInterview.questions[nextIndex].question, 
+        isQuestion: true
+      }]);
     } else {
       setCurrentQuestionIndex(activeInterview.questions.length);
     }
   };
 
+  /**
+   * Get AI-generated model answer for current question
+   * Provides example of good answer
+   */
   const handleGetModelAnswer = async (context: string) => {
     if (!activeInterview) return;
     setIsAnswering(true);
@@ -317,7 +442,10 @@ export default function InterviewPrepPage() {
              userContext: accumulatedContext || undefined,
         });
 
-        const updatedQuestion = { ...currentQuestion, modelAnswer: result.exampleAnswer };
+        const updatedQuestion = { 
+          ...currentQuestion, 
+          modelAnswer: result.exampleAnswer 
+        };
         const updatedQuestions = [...activeInterview.questions];
         updatedQuestions[currentQuestionIndex] = updatedQuestion;
         
@@ -329,12 +457,20 @@ export default function InterviewPrepPage() {
 
         updateActiveInterviewInStorage(updatedInterview);
 
-        setMessages(prev => [...prev, {role: 'bot', content: result.exampleAnswer, isModelAnswer: true}]);
+        setMessages(prev => [...prev, {
+          role: 'bot', 
+          content: result.exampleAnswer, 
+          isModelAnswer: true
+        }]);
 
         const nextIndex = currentQuestionIndex + 1;
         if (nextIndex < activeInterview.questions.length) {
             setCurrentQuestionIndex(nextIndex);
-            setMessages(prev => [...prev, {role: 'bot', content: activeInterview.questions[nextIndex].question, isQuestion: true}]);
+            setMessages(prev => [...prev, {
+              role: 'bot', 
+              content: activeInterview.questions[nextIndex].question, 
+              isQuestion: true
+            }]);
         } else {
             setCurrentQuestionIndex(activeInterview.questions.length);
         }
@@ -354,6 +490,10 @@ export default function InterviewPrepPage() {
      }
   };
 
+  /**
+   * Get AI feedback on completed interview answers
+   * Provides scoring and improvement suggestions
+   */
   const handleGetFeedback = async () => {
     if (!activeInterview) return;
     setIsGettingFeedback(true);
@@ -365,7 +505,10 @@ export default function InterviewPrepPage() {
 
         const feedbackInput = {
             jobRole: activeInterview.jobRole,
-            userAnswers: answeredQuestions.map(q => ({ question: q.question, answer: q.userAnswer }))
+            userAnswers: answeredQuestions.map(q => ({ 
+              question: q.question, 
+              answer: q.userAnswer 
+            }))
         };
 
         const [feedbackResult, scoreResult] = await Promise.all([
@@ -380,7 +523,11 @@ export default function InterviewPrepPage() {
         };
         updateActiveInterviewInStorage(updatedInterview);
 
-        setMessages(prev => [...prev, { role: 'bot', content: feedbackResult.feedback, isFeedback: true }]);
+        setMessages(prev => [...prev, { 
+          role: 'bot', 
+          content: feedbackResult.feedback, 
+          isFeedback: true 
+        }]);
     } catch(e) {
         console.error('Error getting feedback:', e);
         if (e instanceof Error && e.message.includes('RATE_LIMIT_EXCEEDED')) {
@@ -390,22 +537,40 @@ export default function InterviewPrepPage() {
                 description: "You've reached the daily limit for the free tier. Please try again tomorrow.",
             });
         } else if (e instanceof Error) {
-            toast({ variant: 'destructive', title: 'Error getting feedback', description: e.message });
+            toast({ 
+              variant: 'destructive', 
+              title: 'Error getting feedback', 
+              description: e.message 
+            });
         } else {
-            toast({ variant: 'destructive', title: 'Error getting feedback', description: 'An unknown error occurred.' });
+            toast({ 
+              variant: 'destructive', 
+              title: 'Error getting feedback', 
+              description: 'An unknown error occurred.' 
+            });
         }
     } finally {
         setIsGettingFeedback(false);
     }
   };
 
+  /**
+   * Save question to personal question bank
+   * Analyzes and categorizes question for future practice
+   */
   const handleBankQuestion = async (question: string) => {
     if (questionBank.some(q => q.question === question)) {
-        toast({ title: "Already Banked", description: "This question is already in your bank."});
+        toast({ 
+          title: "Already Banked", 
+          description: "This question is already in your bank."
+        });
         return;
     }
 
-    toast({ title: "Banking question...", description: "Analyzing and saving to your bank."});
+    toast({ 
+      title: "Banking question...", 
+      description: "Analyzing and saving to your bank."
+    });
     try {
         const analysis = await analyzeAndBankQuestion({ question });
         const newBankedQuestion: BankedQuestion = {
@@ -421,24 +586,44 @@ export default function InterviewPrepPage() {
     }
   };
 
+  /**
+   * Remove question from personal question bank
+   */
   const handleDeleteBankedQuestion = (id: string) => {
     saveQuestionBank(questionBank.filter(q => q.id !== id));
     toast({ title: 'Question removed from bank.' });
   }
 
+  /**
+   * Rename an interview in history
+   */
   const handleRenameInterview = (id: string, newName: string) => {
-    const updated = interviews.map(i => i.id === id ? { ...i, name: newName } : i);
-    saveInterviews(updated, activeInterview?.id === id ? { ...activeInterview, name: newName } : activeInterview);
+    const updated = interviews.map(i => 
+      i.id === id ? { ...i, name: newName } : i
+    );
+    saveInterviews(
+      updated, 
+      activeInterview?.id === id ? { ...activeInterview, name: newName } : activeInterview
+    );
   };
 
+  /**
+   * Delete interview from history
+   */
   const deleteInterview = (id: string) => {
     const updated = interviews.filter(i => i.id !== id);
-    saveInterviews(updated, activeInterview?.id === id ? null : activeInterview);
+    saveInterviews(
+      updated, 
+      activeInterview?.id === id ? null : activeInterview
+    );
     if (activeInterview?.id === id) {
       window.location.reload();
     }
   };
 
+  /**
+   * Reset chat state when no interview is active
+   */
   useEffect(() => {
     if (!activeInterview) {
       setMessages([]);
@@ -446,49 +631,66 @@ export default function InterviewPrepPage() {
     }
   }, [activeInterview]);
   
-    useEffect(() => {
-        return () => {
-            if (recognitionRef.current && isRecording) {
-                recognitionRef.current.stop();
-            }
-        };
-    }, [isRecording]);
+  /**
+   * Cleanup speech recognition on component unmount
+   */
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current && isRecording) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, [isRecording]);
 
   return (
+    {/* 
+      MAIN LAYOUT CONTAINER
+      - Left: Setup/History sidebar, Right: Chat interface
+    */}
     <div className="grid h-[calc(100vh-8rem)] gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-5 flex flex-col gap-6">
-            <Tabs defaultValue="setup" className="flex flex-col flex-1 min-h-0">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="setup">Interview Setup</TabsTrigger>
-                    <TabsTrigger value="bank">Question Bank</TabsTrigger>
-                </TabsList>
-                <TabsContent value="setup" className="flex-1 flex flex-col min-h-0 mt-4">
-                     <InterviewSetup
-                        form={form}
-                        isLoading={isLoading}
-                        interviews={interviews}
-                        activeInterview={activeInterview}
-                        onStartInterview={(values) => handleStartInterview(values)}
-                        onSelectInterview={handleSelectInterview}
-                        onRenameInterview={handleRenameInterview}
-                        onDeleteInterview={deleteInterview}
-                        onPracticeAgain={handlePracticeAgain}
-                    />
-                </TabsContent>
-                <TabsContent value="bank" className="mt-6">
-        <div className="grid gap-4">
-          <QuestionBankTab
-            questions={questionBank}
-            onPractice={(q) =>
-              handleStartInterview({ jobRole: q.category }, q.question)
-            }
-            onDelete={handleDeleteBankedQuestion}
-          />
-        </div>
-      </TabsContent>
-            </Tabs>
-        </div>
+      {/* LEFT SIDEBAR */}
+      <div className="lg:col-span-5 flex flex-col gap-6">
+        <Tabs defaultValue="setup" className="flex flex-col flex-1 min-h-0">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="setup">Interview Setup</TabsTrigger>
+            <TabsTrigger value="bank">Question Bank</TabsTrigger>
+          </TabsList>
+          
+          {/* Interview Setup Tab */}
+          <TabsContent value="setup" className="flex-1 flex flex-col min-h-0 mt-4">
+            <InterviewSetup
+              form={form}
+              isLoading={isLoading}
+              interviews={interviews}
+              activeInterview={activeInterview}
+              onStartInterview={(values) => handleStartInterview(values)}
+              onSelectInterview={handleSelectInterview}
+              onRenameInterview={handleRenameInterview}
+              onDeleteInterview={deleteInterview}
+              onPracticeAgain={handlePracticeAgain}
+            />
+          </TabsContent>
+          
+          {/* Question Bank Tab */}
+          <TabsContent value="bank" className="mt-6">
+            <div className="grid gap-4">
+              <QuestionBankTab
+                questions={questionBank}
+                onPractice={(q) =>
+                  handleStartInterview({ jobRole: q.category }, q.question)
+                }
+                onDelete={handleDeleteBankedQuestion}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
 
+      {/* 
+        RIGHT SIDEBAR
+        - Main chat interface for interview simulation
+        - Contains question display, answer input and controls
+      */}
       <InterviewChat
         activeInterview={activeInterview}
         messages={messages}
@@ -503,15 +705,12 @@ export default function InterviewPrepPage() {
         onGetFeedback={handleGetFeedback}
         onToggleRecording={handleToggleRecording}
         onPracticeAgain={() => handlePracticeAgain(activeInterview!)}
-        onBankQuestion={handleBankQuestion} onMessagesUpdate={function (messages: ChatMessage[]): void {
+        onBankQuestion={handleBankQuestion} 
+        onMessagesUpdate={function (messages: ChatMessage[]): void {
           throw new Error('Function not implemented.');
-        } }      />
+        } } 
+      />
     </div>
   );
 }
-
-   
-   
-    
-
-    
+  
