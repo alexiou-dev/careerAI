@@ -21,14 +21,16 @@ type AuthContextType = {
   // Raw Supabase user object (null if not authenticated)
   user: any | null;
   userEmail: string | null;
+  
+  // Client-side login (creates a Supabase session)
   // Authenticates user with email/password
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   // Registers new user via API endpoint
   signup: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   // Signs out user and clears session
   logout: () => Promise<void>;
-  // Placeholder for account deletion
-  deleteAccount: () => Promise<string>;
+  // Account deletion
+  deleteAccount: (confirmation: string) => Promise<string>;
   // Loading state during auth initialization
   isLoading: boolean;
 };
@@ -70,13 +72,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initAuth(); // Initialize auth state
 
-    /**
-     * Real-time Auth State Listener
-     * 
-     * Subscribes to Supabase auth state changes:
-     * - User signs in/out in another tab
-     * - Session expires or is refreshed
-     * - User updates profile
+     /**
+     * Auth State Change Listener
+     * Triggered when:
+     * - User signs in or out
+     * - Session is refreshed or expires
+     * Keeps React state aligned with Supabase internal state.
      */
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null); // Update user state on any auth change
@@ -158,13 +159,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/login');           // Redirect to login page
   };
 
-  const deleteAccount = async () => {
-    if (!user) return 'No user logged in.';
+  const deleteAccount = async (confirmation: string) => {
+  if (!user) {
+    return 'No authenticated user.';
+  }
 
-    await logout();
-    return `Account for ${user.email} deleted (placeholder).`;
-  };
+  try {
+    const res = await fetch('/api/account/delete', {
+      method: 'DELETE',
+      headers: {'Content-Type': 'application/json',},
+      body: JSON.stringify({userId: user.id,confirmation,}),
+    });
 
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      return data.error || 'Account deletion failed.';
+    }
+
+    // Only log out AFTER confirmed deletion
+    await supabase.auth.signOut();
+    setUser(null);
+    router.push('/login');
+
+    return 'Account deleted successfully.';
+  } catch (err: any) {
+    return err.message || 'Unexpected error during account deletion.';
+  }
+};
+  
   /**
    Provides authentication state and methods to children.
    */
