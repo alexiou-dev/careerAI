@@ -333,11 +333,11 @@ export default function ResumeTailorPage() {
   };
 
   return (
-    {/* 
+    /* 
       MAIN LAYOUT CONTAINER
       - Uses CSS Grid for responsive two-column layout
       - Left: Input form, Right: Preview/output
-    */}
+    */
     <div className="grid gap-8 md:grid-cols-2">
       
       {/* 
