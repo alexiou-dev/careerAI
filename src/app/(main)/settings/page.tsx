@@ -131,9 +131,9 @@ export default function SettingsPage() {
   };
 
   return (
-    {/* 
+    /* 
       MAIN PAGE CONTAINER
-    */}
+    */
     <div className="space-y-8 max-w-2xl mx-auto">
       {/* 
         ACCOUNT INFORMATION CARD
@@ -199,12 +199,7 @@ export default function SettingsPage() {
                 </Button>
               </div>
             ) : (
-              {/* 
-                EDIT STATE
-                - Input field for entering LinkedIn URL
-                - Save button to persist to localStorage
-                - Placeholder provides example format
-              */}
+             
               <div className="flex gap-2">
                 <Input 
                   placeholder="https://linkedin.com/in/username" 
@@ -223,16 +218,11 @@ export default function SettingsPage() {
             )}
           </div>
 
-          {/* 
-            GITHUB PROFILE SECTION
-            - Mirror pattern to LinkedIn section
-            - Two states: Saved vs Edit
-            - Same interaction pattern
-          */}
+        
           <div className="space-y-2">
             <Label>GitHub Profile</Label>
             
-            {/* Saved state with link and delete button */}
+       
             {savedGithub ? (
               <div className="flex items-center gap-2">
                 <a 
@@ -254,7 +244,7 @@ export default function SettingsPage() {
                 </Button>
               </div>
             ) : (
-              {/* Edit state with input and save button */}
+             
               <div className="flex gap-2">
                 <Input 
                   placeholder="https://github.com/username" 
@@ -274,10 +264,6 @@ export default function SettingsPage() {
           </div>
         </CardContent>
         
-        {/* 
-          LOGOUT BUTTON IN CARD FOOTER
-          - logout(): Clears auth session
-        */}
         <CardFooter>
           <Button 
             variant="outline" 
@@ -289,11 +275,6 @@ export default function SettingsPage() {
         </CardFooter>
       </Card>
 
-      {/* 
-        DANGER ZONE CARD
-        - Contains destructive actions
-        - Account deletion with confirmation dialog
-      */}
       <Card className="border-destructive">
         <CardHeader>
           <CardTitle>Danger Zone</CardTitle>
@@ -303,11 +284,7 @@ export default function SettingsPage() {
         </CardHeader>
         
         <CardContent>
-          {/* 
-            ACCOUNT DELETION ALERT DIALOG
-            - Two-step process: Trigger opens dialog, confirmation executes
-            - variant="destructive": Red button for destructive action
-          */}
+        
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button 
@@ -317,12 +294,7 @@ export default function SettingsPage() {
                 Delete Account
               </Button>
             </AlertDialogTrigger>
-            
-            {/* 
-              DIALOG CONTENT
-              - Warning message about permanence
-              - Cancel and Delete action buttons
-            */}
+         
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
@@ -332,14 +304,9 @@ export default function SettingsPage() {
               </AlertDialogHeader>
               
               <AlertDialogFooter>
-                {/* Cancel button - closes dialog without action */}
+     
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                
-                {/* 
-                  DELETE ACTION BUTTON
-                  - onClick executes handleDeleteAccount
-                  - handleDeleteAccount: Makes API call and cleans up data
-                */}
+             
                 <AlertDialogAction 
                   onClick={handleDeleteAccount} 
                   className="bg-destructive hover:bg-destructive/90"
