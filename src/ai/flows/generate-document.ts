@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview AI agent for generating professional documents like cover letters.
+ AI agent for generating professional documents like cover letters.
  *
  * This flow generates various career-related documents using AI:
  * - Cover letters
