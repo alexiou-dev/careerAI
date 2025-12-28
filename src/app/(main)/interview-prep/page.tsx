@@ -643,10 +643,10 @@ export default function InterviewPrepPage() {
   }, [isRecording]);
 
   return (
-    {/* 
+    /* 
       MAIN LAYOUT CONTAINER
       - Left: Setup/History sidebar, Right: Chat interface
-    */}
+    */
     <div className="grid h-[calc(100vh-8rem)] gap-6 lg:grid-cols-12">
       {/* LEFT SIDEBAR */}
       <div className="lg:col-span-5 flex flex-col gap-6">
