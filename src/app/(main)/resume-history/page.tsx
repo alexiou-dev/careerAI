@@ -261,16 +261,4 @@ export default function ResumeHistoryPage() {
       />
     </>
   );
-}
-
-{/* Fragment
-├── Header Section (title + description)
-├── Main Content Card
-│   ├── Condition: Has resumes?
-│   │   ├── Yes: Resume List (ul > li)
-│   │   │   ├── Resume Info (icon + name/date)
-│   │   │   └── Action Buttons (View/Rename/Delete)
-│   │   └── No: Empty State (centered)
-│   └── (Condition ends)
-├── RenameResumeDialog (modal)
-└── ViewResumeDialog (modal) */}        
+}  
