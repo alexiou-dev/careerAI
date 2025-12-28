@@ -22,8 +22,8 @@ CareerAI integrates a suite of AI-driven tools into a single, streamlined platfo
 |------|-----------|
 | 🗂️ **Job Tracker** | Organize and manage applications using a drag-and-drop Kanban board. |
 | 🔍 **AI Job Finder** | Discover relevant job postings using AI-powered search across multiple data sources. |
-| 📄 **Resume Tailor** | Generate role-specific resume versions optimized against job descriptions. |
-| ✍️ **AI Writer** | Instantly create cover letters, follow-ups, and outreach messages. |
+| 📄 **Resume Tailor** | Gemini-powered keyword optimization + ATS-friendly reformatting. |
+| ✍️ **AI Writer** | Instantly create cover letters, follow-ups and outreach messages. |
 | 🎤 **Interview Prep Coach** | Generates role- and company-specific interview questions and provides qualitative feedback via evaluation prompts. |
 | 📊 **Skill Gap Analyzer** | Identify missing skills and receive a personalized learning roadmap. |
 | 🧭 **Company Fit Analysis** | Evaluate cultural and value alignment with prospective employers. |
