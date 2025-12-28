@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview Resume tailoring AI agent that optimizes a PDF resume to match a given job description.
+ Resume tailoring AI agent that optimizes a PDF resume to match a given job description.
  *
  * - tailorResume - A function that handles the resume tailoring process.
  * - TailorResumeInput - The input type for the tailorResume function.
