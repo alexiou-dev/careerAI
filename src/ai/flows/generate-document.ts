@@ -3,9 +3,21 @@
 /**
  * @fileOverview AI agent for generating professional documents like cover letters.
  *
- * - generateDocument - A function that handles the document generation process.
+ * This flow generates various career-related documents using AI:
+ * - Cover letters
+ * - Thank-you emails
+ * - Networking outreach
+ * 
+ * It analyzes both the user's resume and target job description to create personalized content.
+ * 
+ * Features:
+ * - Context-aware document generation
+ * - Resume analysis for personalization
+ * - Job description alignment
+ * - Multiple document type support
  */
 
+// AI integration for document generation
 import {ai} from '@/ai/genkit';
 import {
   GenerateDocumentInput,
@@ -14,12 +26,33 @@ import {
   GenerateDocumentOutputSchema,
 } from '@/types/ai-documents';
 
+// ---------------------
+// MAIN EXPORT FUNCTION
+// ---------------------
 export async function generateDocument(
   input: GenerateDocumentInput
 ): Promise<GenerateDocumentOutput> {
+  // Delegate to the defined AI flow
   return generateDocumentFlow(input);
 }
 
+// ---------------------
+// AI PROMPT DEFINITION
+// ---------------------
+
+/**
+ * AI Prompt: Professional Document Generation
+ * 
+ * Structured prompt for generating various career documents.
+ * Uses media attachment for resume PDF analysis and conditional formatting.
+ * 
+ * Prompt Structure:
+ * 1. Role definition (expert career coach and professional writer)
+ * 2. Context: Resume PDF + Job Description + Document Type
+ * 3. Step-by-step generation instructions
+ * 4. Formatting rules based on document type
+ * 5. Personalization guidance
+ */
 const prompt = ai.definePrompt({
   name: 'generateDocumentPrompt',
   input: {schema: GenerateDocumentInputSchema},
@@ -42,6 +75,18 @@ const prompt = ai.definePrompt({
 Generate the {{documentType}} based on these instructions.`,
 });
 
+// ---------------------
+// AI FLOW DEFINITION
+// ---------------------
+
+/**
+ * AI Flow: Document Generation Workflow
+ * 
+ * Orchestrates the complete document generation process:
+ * 1. Execute AI prompt with resume and job description
+ * 2. Handle rate limiting gracefully
+ * 3. Return formatted document text
+ */
 const generateDocumentFlow = ai.defineFlow(
   {
     name: 'generateDocumentFlow',
@@ -50,9 +95,18 @@ const generateDocumentFlow = ai.defineFlow(
   },
   async input => {
     try {
+      /**
+       * Step 1: Execute AI Generation
+       */
       const {output} = await prompt(input);
+      /**
+       * Step 2: Return Generated Document
+       */
       return output!;
     } catch (error: any) {
+      /**
+       * Step 3: Error Handling
+       */
       if (error.message?.includes('429') || error.message?.includes('quota')) {
         throw new Error('RATE_LIMIT_EXCEEDED');
       }
