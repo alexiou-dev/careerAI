@@ -106,10 +106,10 @@ export default function CompanyFitPage() {
   }
 
   return (
-    {/* 
+    /* 
       MAIN LAYOUT CONTAINER
       - Left: Input form, Right: Analysis results
-    */}
+    */
     <div className="grid gap-8 md:grid-cols-2">
       
       {/* 
