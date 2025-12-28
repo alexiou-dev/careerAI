@@ -263,8 +263,7 @@ export default function ResumeHistoryPage() {
   );
 }
 
-{/* 
-Fragment
+{/* Fragment
 ├── Header Section (title + description)
 ├── Main Content Card
 │   ├── Condition: Has resumes?
@@ -274,5 +273,4 @@ Fragment
 │   │   └── No: Empty State (centered)
 │   └── (Condition ends)
 ├── RenameResumeDialog (modal)
-└── ViewResumeDialog (modal)
-*/}        
+└── ViewResumeDialog (modal) */}        
