@@ -402,10 +402,10 @@ function GenerateResumeTab() {
   };
 
   return (
-    {/* 
+    /* 
     MAIN LAYOUT CONTAINER
     - Uses CSS Grid for responsive two-column layout
-  */}
+  */
     <div className="grid gap-8 md:grid-cols-2">
       {/* 
       LEFT COLUMN: INPUT FORM CARD
