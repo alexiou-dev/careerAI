@@ -1,11 +1,16 @@
 'use server';
 
 /**
- * @fileOverview AI agent for analyzing company culture and fit.
- *
- * - analyzeCompanyFit - A function that handles the company fit analysis.
+ * This flow analyzes company culture and assesses alignment with user preferences.
+ * It combines AI analysis with external data sources (Glassdoor, company websites, news).
+ * 
+ * Features:
+ * - Company culture analysis using AI
+ * - Preference alignment scoring
+ * - External link gathering (Glassdoor, careers page, news)
  */
 
+// AI integration for company analysis
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import {
@@ -14,14 +19,42 @@ import {
   type AnalyzeCompanyFitInput,
   type AnalyzeCompanyFitOutput,
 } from '@/types/ai-company-fit';
+// External API for web searches
 import { googleSearch } from '@/lib/googleSearch';
 
+// ---------------------
+// MAIN EXPORT FUNCTION
+// ---------------------
+
+/**
+ * Analyze Company Fit
+ * 
+ * Main entry point for company culture analysis.
+ * Wraps the AI flow with proper typing and error handling.
+ */
 export async function analyzeCompanyFit(
   input: AnalyzeCompanyFitInput
 ): Promise<AnalyzeCompanyFitOutput> {
+  // Delegate to the defined AI flow
   return analyzeCompanyFitFlow(input);
 }
 
+
+// ---------------------
+// TOOL: FIND COMPANY INFORMATION
+// ---------------------
+
+/**
+ * Tool: Find Company Information
+ * 
+ * Searches for key public URLs related to a company:
+ * 1. Careers page - Company's official job listings
+ * 2. Glassdoor page - Employee reviews and ratings
+ * 3. News search - Recent company news and updates
+ * 
+ * Uses Google Custom Search API via googleSearch helper.
+ * Falls back to Google search URLs if specific pages not found.
+ */
 const findCompanyInfo = ai.defineTool(
   {
     name: 'findCompanyInfo',
@@ -37,15 +70,25 @@ const findCompanyInfo = ai.defineTool(
     // This is a helper to find the most likely URL from search results.
     const findUrl = async (query: string) => {
       try {
+        // Use Google Custom Search API
         const results = await googleSearch(query);
+        // Return first result or fallback to Google search
         return results[0]?.url || `https://www.google.com/search?q=${encodeURIComponent(query)}`;
       } catch (e) {
+        // On error, return Google search URL as fallback
         return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
       }
     };
 
+    /**
+     * Parallel URL Fetching
+     * Fetch careers and Glassdoor URLs simultaneously for performance.
+     * News URL is constructed directly (no API call needed).
+     */
     const [careersUrl, glassdoorUrl] = await Promise.all([
+      // Search for company careers page
       findUrl(`${companyName} careers`),
+      // Search for Glassdoor reviews
       findUrl(`${companyName} glassdoor`),
     ]);
 
@@ -55,7 +98,21 @@ const findCompanyInfo = ai.defineTool(
   }
 );
 
+// ---------------------
+// PROMPT: COMPANY FIT ANALYSIS
+// ---------------------
 
+/**
+ * AI Prompt: Analyze Company Fit
+ * 
+ * Structured prompt template for Gemini AI to analyze company culture.
+ * 
+ * Prompt Structure:
+ * 1. Role definition (expert career analyst)
+ * 2. Company and user preferences context
+ * 3. Detailed instructions for analysis
+ * 4. Output format specification
+ */
 const prompt = ai.definePrompt({
   name: 'analyzeCompanyFitPrompt',
   input: { schema: AnalyzeCompanyFitInputSchema },
@@ -92,7 +149,19 @@ Learn more...
 Generate the analysis according to these instructions.`
 });
 
+// ---------------------
+// FLOW: COMPANY FIT ANALYSIS
+// ---------------------
 
+/**
+ * AI Flow: Analyze Company Fit
+ * 
+ * Orchestrates the complete company analysis workflow:
+ * 1. Find company information (URLs)
+ * 2. Generate AI analysis using prompt
+ * 3. Combine results with external links
+ * 4. Handle rate limiting gracefully
+ */
 const analyzeCompanyFitFlow = ai.defineFlow(
   {
     name: 'analyzeCompanyFitFlow',
@@ -100,15 +169,30 @@ const analyzeCompanyFitFlow = ai.defineFlow(
     outputSchema: AnalyzeCompanyFitOutputSchema,
   },
   async (input) => {
+    /**
+     * Step 1: Gather Company Information
+     * Fetch external URLs before AI analysis.
+     */
     const companyInfo = await findCompanyInfo({ companyName: input.companyName });
 
     try {
+      /**
+       * Step 2: Generate AI Analysis
+       * Use the defined prompt with company name and user preferences.
+       * The AI will analyze culture and calculate fit score.
+       */
       const { output } = await prompt({
         ...input,
         companyName: input.companyName,
         userPreferences: input.userPreferences,
       });
 
+      /**
+       * Step 3: Combine Results
+       * 
+       * Merge AI analysis with external URLs.
+       * This creates a complete analysis package.
+       */
       return {
         ...output!,
         links: {
@@ -118,8 +202,13 @@ const analyzeCompanyFitFlow = ai.defineFlow(
         },
       };
     } catch (err: any) {
+      /**
+       * Step 4: Error Handling
+       */
       if (err.message.includes("429") || err.message.includes("Too Many Requests")) {
-        // Instead of throwing, return a friendly message
+        /**
+         * Graceful Degradation for Rate Limits
+         */
         return {
           companyCultureSummary: "The AI service quota has been reached for today. Please try again later or check your API quota.",
           alignmentAnalysis: "",
@@ -131,8 +220,6 @@ const analyzeCompanyFitFlow = ai.defineFlow(
           },
         };
       }
-
-      // rethrow other errors as usual
       throw err;
     }
   }
