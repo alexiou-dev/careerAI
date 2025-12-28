@@ -225,7 +225,7 @@ export default function Home() {
               Everything You Need for Career Success
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Five powerful tools working together to accelerate your career growth and help you land the perfect job.
+              Seven powerful tools working together to accelerate your career growth and help you land the perfect job.
             </p>
           </div>
 
