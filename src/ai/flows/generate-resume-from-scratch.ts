@@ -1,9 +1,11 @@
 'use server';
 
 /**
- * @fileOverview Resume generation AI agent that creates a resume from scratch based on user-provided details.
- *
- * - generateResumeFromScratch - A function that handles the resume generation process.
+ Resume generation AI agent that creates a resume from scratch based on user-provided details.
+ * Main Responsibilities:
+ * 1. Accept structured resume data from client forms
+ * 2. Format and preprocess data for AI consumption
+ * 3. Generate professionally formatted resume using AI
  */
 
 import { ai } from '@/ai/genkit';
@@ -14,12 +16,18 @@ import {
     type GenerateResumeOutput,
 } from '@/types/ai-resume-builder';
 
+// ---------------------
+// MAIN EXPORT FUNCTION
+// ---------------------
 export async function generateResumeFromScratch(
   input: GenerateResumeInput
 ): Promise<GenerateResumeOutput> {
   return generateResumeFromScratchFlow(input);
 }
 
+// ---------------------
+// AI PROMPT DEFINITION
+// ---------------------
 const prompt = ai.definePrompt({
   name: 'generateResumeFromScratchPrompt',
   input: { schema: GenerateResumeInputSchema },
@@ -85,6 +93,15 @@ Now, generate the complete resume based on the data and formatting rules.`,
 });
 
 
+// ---------------------
+// AI FLOW DEFINITION
+// ---------------------
+
+/**
+ * This flow:
+ * 1. Preprocesses input data to ensure consistent bullet point formatting
+ * 2. Executes the AI prompt with error handling
+ */
 const generateResumeFromScratchFlow = ai.defineFlow(
   {
     name: 'generateResumeFromScratchFlow',
@@ -92,13 +109,15 @@ const generateResumeFromScratchFlow = ai.defineFlow(
     outputSchema: GenerateResumeOutputSchema,
   },
   async (input) => {
-    // Reformat responsibilities and descriptions to ensure they are bulleted.
+    // Reformat responsibilities and descriptions to ensure they are bulleted
     const processedInput = {
         ...input,
+        // Work experience bullet points
         workExperience: input.workExperience.map(exp => ({
             ...exp,
             responsibilities: exp.responsibilities ? exp.responsibilities.split('\n').map(line => line.trim().startsWith('•') ? line : `• ${line}`).join('\n') : ''
         })),
+        // Leadership activity bullet points
         leadership: input.leadership && Array.isArray(input.leadership) ? input.leadership.map(lead => ({
             ...lead,
             description: lead.description ? lead.description.split('\n').map(line => line.trim().startsWith('•') ? line : `• ${line}`).join('\n') : ''
