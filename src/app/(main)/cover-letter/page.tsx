@@ -141,10 +141,10 @@ export default function AIWriterPage() {
   };
 
   return (
-    {/* 
+    /* 
       MAIN LAYOUT CONTAINER
       - Left: Input form, Right: Generated document preview
-    */}
+    */
     <div className="grid gap-8 md:grid-cols-2">
       
       {/* 
