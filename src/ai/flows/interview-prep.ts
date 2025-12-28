@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview AI agents for conducting a structured mock interview experience.
+ AI agents for conducting a structured mock interview experience.
  *
  * - generateInterviewQuestions: Creates a list of questions for a given role.
  * - getExampleAnswer: Provides an ideal answer to a specific interview question.
