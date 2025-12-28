@@ -12,7 +12,7 @@
 
 ---
 
-CareerAI is a comprehensive, generative AI-powered web application designed to be your ultimate co-pilot in the job search and career development journey. It provides a suite of intelligent tools that streamline every step of the process, from discovering the perfect opportunity to acing the interview.
+CareerAI is a comprehensive, generative AI-powered web application that orchestrates large language model workflows to support real-world career search tasks such as resume tailoring, interview preparation and job discovery.
 
 ## ✨ Features
 
@@ -24,7 +24,7 @@ CareerAI integrates a suite of AI-driven tools into a single, streamlined platfo
 | 🔍 **AI Job Finder** | Discover relevant job postings using AI-powered search across multiple data sources. |
 | 📄 **Resume Tailor** | Generate role-specific resume versions optimized against job descriptions. |
 | ✍️ **AI Writer** | Instantly create cover letters, follow-ups, and outreach messages. |
-| 🎤 **Interview Prep Coach** | Practice interviews with AI-generated questions and receive structured feedback. |
+| 🎤 **Interview Prep Coach** | Generates role- and company-specific interview questions and provides qualitative feedback via evaluation prompts. |
 | 📊 **Skill Gap Analyzer** | Identify missing skills and receive a personalized learning roadmap. |
 | 🧭 **Company Fit Analysis** | Evaluate cultural and value alignment with prospective employers. |
 
