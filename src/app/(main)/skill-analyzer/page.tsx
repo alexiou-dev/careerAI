@@ -386,11 +386,11 @@ export default function SkillAnalyzerPage() {
   };
 
   return (
-    {/* 
+    /* 
       MAIN PAGE CONTAINER (Fragment)
       - Contains tab navigation for analyzer and history
       - Dialogs for save/edit/view functionality
-    */}
+    */
     <>
       <Tabs defaultValue="analyzer" className="w-full">
         {/* 
@@ -641,10 +641,7 @@ export default function SkillAnalyzerPage() {
                     No saved roadmaps yet.
                   </div>
                 ) : (
-                  {/* 
-                    ROADMAP LIST
-                    - Each item shows name, priority, timeline, preview
-                  */}
+                  
                   <ul className="space-y-4">
                     {savedRoadmaps.map((roadmap) => {
                       // Extract timeline from roadmap content
@@ -681,14 +678,9 @@ export default function SkillAnalyzerPage() {
                                 )}
                               </div>
                             </div>
-                            {/* 
-                              ACTION BUTTONS
-                              - View: Opens roadmap in dialog
-                              - Edit: Opens edit dialog
-                              - Delete: Confirmation dialog
-                            */}
+                           
                             <div className="flex items-center">
-                              {/* View button */}
+                  
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
@@ -697,7 +689,7 @@ export default function SkillAnalyzerPage() {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              {/* Edit button */}
+                          
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
@@ -713,7 +705,7 @@ export default function SkillAnalyzerPage() {
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              {/* Delete button with confirmation dialog */}
+              
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button 
@@ -744,7 +736,7 @@ export default function SkillAnalyzerPage() {
                               </AlertDialog>
                             </div>
                           </div>
-                          {/* Roadmap preview text */}
+          
                           <div>
                             <p className="text-sm text-muted-foreground italic">
                               {preview}
@@ -761,12 +753,6 @@ export default function SkillAnalyzerPage() {
         </TabsContent>
       </Tabs>
       
-      {/* 
-        SAVE/EDIT DIALOG
-        - Shared dialog for saving new roadmaps and editing existing ones
-        - Conditional title based on mode
-        - Form for name, priority, timeline
-      */}
       <Dialog open={isSaveDialogOpen || !!roadmapToEdit} onOpenChange={(isOpen) => {
         if (!isOpen) {
           setIsSaveDialogOpen(false);
@@ -780,7 +766,7 @@ export default function SkillAnalyzerPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-4">
-            {/* Roadmap name input */}
+     
             <div className='space-y-2'>
               <Label htmlFor="roadmap-name">Roadmap Name</Label>
               <Input 
@@ -789,7 +775,7 @@ export default function SkillAnalyzerPage() {
                 onChange={(e) => setSaveFormValues(v => ({...v, name: e.target.value}))} 
               />
             </div>
-            {/* Priority dropdown */}
+            
             <div className='space-y-2'>
               <Label htmlFor="roadmap-priority">Priority</Label>
               <Select 
@@ -842,10 +828,10 @@ export default function SkillAnalyzerPage() {
                 Generated on {format(new Date(viewedRoadmap.createdAt), 'PPp')}
               </DialogDescription>
             </DialogHeader>
-            {/* Scrollable content area for roadmap details */}
+
             <ScrollArea className="flex-1 min-h-0 -mx-6 px-6">
               <div className="space-y-6 p-6 pt-0">
-                {/* Success message (if present) */}
+               
                 {viewedRoadmap.analysis.message && (
                   <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-green-500/50 bg-green-500/10 p-8 text-center">
                     <p className="text-base font-medium text-foreground">
@@ -853,7 +839,7 @@ export default function SkillAnalyzerPage() {
                     </p>
                   </div>
                 )}
-                {/* Skill gaps accordion */}
+     
                 {viewedRoadmap.analysis.skillGaps && viewedRoadmap.analysis.skillGaps.length > 0 && (
                   <Accordion type="single" collapsible className="w-full">
                     {viewedRoadmap.analysis.skillGaps.map((gap, index) => (
