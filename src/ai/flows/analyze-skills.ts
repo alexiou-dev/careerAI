@@ -1,11 +1,17 @@
 'use server';
 
 /**
- * @fileOverview AI agent for analyzing skill gaps between a resume and a job description.
- *
- * - analyzeJobSkills - A function that handles the skill gap analysis and generates a learning roadmap.
+ * This flow analyzes the gap between a user's current skills (from resume) and target job requirements.
+ * It generates personalized learning roadmaps to bridge identified skill gaps.
+ * 
+ * Features:
+ * - Resume vs job description skill gap analysis
+ * - Personalized learning roadmap generation
+ * - Multi-stage curriculum design (Beginner → Advanced)
+ * - Practical exercise recommendations
  */
 
+// AI integration for skill analysis
 import {ai} from '@/ai/genkit';
 import {
   AnalyzeSkillsInputSchema,
@@ -14,6 +20,23 @@ import {
   type SkillAnalysis,
 } from '@/types/ai-skills';
 
+// ---------------------
+// AI PROMPT DEFINITION
+// ---------------------
+
+/**
+ * AI Prompt: Skill Gap Analysis and Roadmap Generation
+ * 
+ * Structured prompt for analyzing resume vs job description and creating learning plans.
+ * Uses media attachment for resume PDF analysis and structured output format.
+ * 
+ * Prompt Structure:
+ * 1. Role definition (expert career coach and curriculum designer)
+ * 2. Context: Resume PDF + Job Description
+ * 3. Step-by-step analysis instructions
+ * 4. Structured roadmap template 
+ * 5. JSON output format specification
+ */
 export const analysisPrompt = ai.definePrompt({
   name: 'skillGapAnalysisPrompt',
   input: { schema: AnalyzeSkillsInputSchema },
@@ -65,6 +88,16 @@ Do not include external links, URLs, or company-specific resources. Focus on con
 `
 });
 
+// ---------------------
+// MAIN EXPORT FUNCTION
+// ---------------------
+
+/**
+ * Analyze Job Skills
+ * 
+ * Main entry point for skill gap analysis.
+ * Executes the AI prompt and returns structured learning roadmaps.
+ */
 export async function analyzeJobSkills(
   input: AnalyzeSkillsInput
 ): Promise<SkillAnalysis> {
