@@ -77,15 +77,9 @@ export default function ResumeHistoryPage() {
   }
 
   return (
-    {/* 
-      MAIN PAGE CONTAINER
-      - Contains header, content card and dialog components
-    */}
+    
     <>
-      {/* 
-        PAGE HEADER SECTION
-        - Provides title and description for the page
-      */}
+     
       <div>
         {/* Page title */}
         <h1 className="text-2xl font-bold tracking-tight">Review your resumes</h1>
@@ -95,19 +89,12 @@ export default function ResumeHistoryPage() {
         </p>
       </div>
 
-      {/* 
-        MAIN CONTENT CARD
-        - Contains the list of saved resumes
-      */}
+      
       <Card className="mt-6">
         <CardContent className="p-6">
-          {/* 
-            CONDITIONAL CONTENT: RESUMES LIST OR EMPTY STATE
-            - Checks if resumes array has items
-            - Shows list if resumes exist, empty state if none
-          */}
+          
           {resumes.length > 0 ? (
-            {/* RESUMES LIST*/}
+         
             <ul className="space-y-3">
               {/* MAP THROUGH EACH SAVED RESUME*/}
               {resumes.map((resume) => (
@@ -209,16 +196,10 @@ export default function ResumeHistoryPage() {
               ))}
             </ul>
           ) : (
-            {/* 
-              EMPTY STATE
-              - Shown when no resumes exist
-              - Centered content with visual indicators
-            */}
+            
             <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
               {/* Empty state icon */}
               <FileText className="h-10 w-10 text-muted-foreground" />
-              
-              {/* Empty state messages */}
               <p className="mt-4 text-sm text-muted-foreground">
                 You have no saved resumes.
               </p>
@@ -230,13 +211,6 @@ export default function ResumeHistoryPage() {
         </CardContent>
       </Card>
 
-      {/* 
-        RENAME RESUME DIALOG
-        - Controlled by renameTarget state
-        - Opens when renameTarget is not null
-        - onClose resets renameTarget to null
-        - onRename executes renameResume function
-      */}
       <RenameResumeDialog
         resume={renameTarget}
         isOpen={!!renameTarget}
@@ -246,19 +220,11 @@ export default function ResumeHistoryPage() {
           setRenameTarget(null);
         }}
       />
-      
-      {/* 
-        VIEW RESUME DIALOG
-        - Controlled by viewTarget state
-        - Opens when viewTarget is not null
-        - onClose resets viewTarget to null
-        - Shows full resume content
-      */}
+     
       <ViewResumeDialog
         resume={viewTarget}
         isOpen={!!viewTarget}
-        onClose={() => setViewTarget(null)}
-      />
+        onClose={() => setViewTarget(null)}/>
     </>
   );
-}  
+}    
