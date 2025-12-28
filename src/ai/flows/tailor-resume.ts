@@ -17,6 +17,9 @@ const TailorResumeInputSchema = z.object({
     .describe(
       "The resume in PDF format, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
+ /**
+   * Target job description for tailoring
+   */
   jobDescription: z.string().describe('The job description to tailor the resume to.'),
 });
 export type TailorResumeInput = z.infer<typeof TailorResumeInputSchema>;
