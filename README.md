@@ -1,8 +1,6 @@
-# 🎯 CareerAI: Your AI-Powered Career Assistant
+# 🎯 CareerAI: Full-Stack AI Career Assistant
 
-<p align="center">
-  <strong>Launch your dream career with smart, AI-powered tools.</strong>
-</p>
+<p align="center"> </p> <p align="center"> <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" /> <img src="https://img.shields.io/badge/Next.js-000000?logo=nextdotjs&logoColor=white" /> <img src="https://img.shields.io/badge/Firebase%20Genkit-FFCA28?logo=firebase&logoColor=black" /> <img src="https://img.shields.io/badge/Gemini%20API-4285F4?logo=google&logoColor=white" /> <img src="https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white" /> </p>
 
 <p align="center">
   <a href="#-features">Features</a> •
@@ -21,7 +19,7 @@ CareerAI integrates a suite of AI-driven tools into a single, streamlined platfo
 | Feature | Description |
 |------|-----------|
 | 🗂️ **Job Tracker** | Organize and manage applications using a drag-and-drop Kanban board. |
-| 🔍 **AI Job Finder** | Discover relevant job postings using AI-powered search across multiple data sources. |
+| 🔍 **AI Job Finder** | Aggregate job listings from multiple external APIs |
 | 📄 **Resume Tailor** | Gemini-powered keyword optimization + ATS-friendly reformatting. |
 | ✍️ **AI Writer** | Instantly create cover letters, follow-ups and outreach messages. |
 | 🎤 **Interview Prep Coach** | Generates role- and company-specific interview questions and provides qualitative feedback via evaluation prompts. |
